@@ -1,4 +1,8 @@
 
+
+!!! THIS REPOSITORY IS WIP AND WILL NOT WORK ATM!!!
+
+
 # PlasMAAG 
 
 PlasMAAG (**Plas**mid and organism **M**etagenomic binning using **A**ssembly **A**lignment **G**raphs) is a framework to recover **plasmids** and **organisms** from **metagenomic** samples, offering state-of-the-art plasmid reconstruction with reduced computational costs.
