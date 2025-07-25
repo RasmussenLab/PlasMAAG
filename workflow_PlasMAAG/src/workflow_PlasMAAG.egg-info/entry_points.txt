@@ -1,2 +1,0 @@
-[console_scripts]
-PlasMAAG = workflow_PlasMAAG.__main__:main

@@ -1,0 +1,3 @@
+[console_scripts]
+PlasMAAG = PlasMAAG.__main__:main
+vamb = vamb.__main__:main

@@ -9,8 +9,7 @@ dependencies:
   - python==3.10.2
   - pip
   - pip:
-      - -e ../.. # Install vamb
-      - -e .. # Install the cli wrapper - paths are relative to the location of the .yaml file
+      - -e .
   - snakemake
   - minimap2
   - samtools

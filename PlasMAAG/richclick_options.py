@@ -2,15 +2,16 @@ import rich_click as click
 
 # Setting rich options
 click.rich_click.OPTION_GROUPS = {
-    "workflow_plamb": [
+    "PlasMAAG": [
         {
             "name": "Defining input files: One of these options are required",
             "options": ["--reads", "--reads_and_assembly_dir"],
         },
         {
-            "name": "Additional Required Arguments",
+            "name": "Additional required Arguments",
             "options": [
                 "--output",
+                "--threads",
             ],
             "table_styles": {
                 "row_styles": ["yellow", "default", "default", "default"],
@@ -19,7 +20,6 @@ click.rich_click.OPTION_GROUPS = {
         {
             "name": "Other Options",
             "options": [
-                "--threads",
                 "--dryrun",
                 "--cli_dryrun",
                 "--snakemake_arguments",

@@ -1,0 +1,25 @@
+Metadata-Version: 2.1
+Name: PlasMAAG
+Version: 4.1.4.dev490+g7fa7c6f.d20250725
+Requires-Python: <3.14,>=3.10.0
+License-File: LICENSE
+Requires-Dist: numpy==2.2.1
+Requires-Dist: torch==2.5.1
+Requires-Dist: pycoverm==0.6.2
+Requires-Dist: networkx==3.4.2
+Requires-Dist: scikit-learn==1.6.0
+Requires-Dist: dadaptation==3.2
+Requires-Dist: loguru==0.7.3
+Requires-Dist: pyhmmer==0.10.15
+Requires-Dist: pyrodigal==3.6.3
+Requires-Dist: pandas==2.2.3
+Requires-Dist: rich-click==1.8.3
+Requires-Dist: click<8.2.0
+Requires-Dist: click<8.2.0
+Requires-Dist: loguru==0.7.3
+Provides-Extra: docs
+Requires-Dist: sphinx; extra == "docs"
+Requires-Dist: sphinx-book-theme; extra == "docs"
+Requires-Dist: myst-nb; extra == "docs"
+Requires-Dist: ipywidgets; extra == "docs"
+Requires-Dist: sphinx-new-tab-link!=0.2.2; extra == "docs"

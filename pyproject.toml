@@ -1,7 +1,7 @@
 # https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html
 [project]
 dynamic = ["version"]
-name = "vamb"
+name = "PlasMAAG"
 dependencies = [
     "numpy == 2.2.1",
     "torch == 2.5.1",
@@ -13,12 +13,20 @@ dependencies = [
     "pyhmmer == 0.10.15",
     "pyrodigal == 3.6.3",
     "pandas == 2.2.3",
+    "rich-click==1.8.3",
+    "click<8.2.0",
+    "click<8.2.0",
+    "loguru==0.7.3"
 ]
+
 # Currently pycoverm does not have binaries for Python > 3.13.
 # The dependency resolver, will not error on Python 3.14, but attempt
 # to build pycoverm from source, but will not get the deps required for that.
 requires-python = "<3.14,>=3.10.0"
-scripts = {vamb = "vamb.__main__:main"}
+
+[project.scripts]
+PlasMAAG = "PlasMAAG.__main__:main"
+vamb = "vamb.__main__:main"
 
 [project.optional-dependencies]
 docs = [
@@ -34,11 +42,12 @@ authors = [
   {name = "Jakob Nybo Nissen", email = "jakobnybonissen@gmail.com"},
   {name = "Pau Piera", email = "pau.piera@cpr.ku.dk"},
   {name = "Simon Rasmussen", email = "simon.rasmussen@cpr.ku.dk"},
+  {name = "Lasse Schnell Danilesen", email = "lasse.danielsen@sund.ku.dk"},
 ]
-description = "Variational and Adversarial autoencoders for Metagenomic Binning"
+description = "PlasMAAG is a tool to recover plasmids and organisms from metagenomic samples"
 license = "MIT"
 readme = {file = "README.md"}
-url = "https://github.com/RasmussenLab/vamb"
+url = "https://github.com/RasmussenLab/plasmaag"
 
 [build-system]
 requires = [

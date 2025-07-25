@@ -1,5 +1,5 @@
-# Contributing to Vamb
-The Git repository is currently hosted at https://github.com/RasmussenLab/vamb
+# Contributing to PlassMAAG
+The Git repository is currently hosted at https://github.com/RasmussenLab/plasmaag
 
 ## Git workflow
 In order for your contribution to be easily integrated into a package that is concurrently worked on by multiple people, it's important that you adhere to the Git workflow that we use for this repo.
@@ -18,7 +18,7 @@ Also, please delete your feature branches after they've been merged to master so
 
 #### Release branches
 Releases are only cut from release branches.
-The purpose of release branches is to keep a version of Vamb that is more stable than the development version found on master.
+The purpose of release branches is to keep a version of PlassMAAG that is more stable than the development version found on master.
 This stability is achieved by only adding bugfixes to release branches, not new features. Over time, the bugfixes will accumulate, while the new features (which mostly are where new bugs come from), are added to master only.
 Release branches are named "release", plus the major and minor version, like so: "release-4.1". They are always cut from master.
 We only backport bugfixes to one, or a few release branches at a time, so old release branches quickly get outdated. However, we will not remove them.
@@ -27,9 +27,9 @@ Release branches are never merged back to master. If commits from master are nee
 This is the only case where commits may be duplicated on two different branches.
 
 #### Tags
-Each release of Vamb (from a release branch) is tagged with a lowercase "v", then a SemVer 2.0 version, e.g. "v4.1.3".
+Each release of PlassMAAG (from a release branch) is tagged with a lowercase "v", then a SemVer 2.0 version, e.g. "v4.1.3".
 A tag unambiguously refers to a commit, and is never removed.
-Ideally, the tagged commit should be the one that updates the version in `vamb/__init__.py`.
+Ideally, the tagged commit should be the one that updates the version in `PlassMAAG/__init__.py`.
 
 #### Testing
 Our CI pipeline currently uses a formatter and a linter to check for issues (currently, the Ruff formatter and linter).
@@ -41,8 +41,8 @@ We already have lots of issues with out dependencies, and don't want any more.
 
 ## Example commands
 We assume:
-    - The https://github.com/RasmussenLab/vamb repo is added as a remote with the name `upstream`
-    - Your own fork of Vamb is added as a remote called `origin`
+    - The https://github.com/RasmussenLab/PlassMAAG repo is added as a remote with the name `upstream`
+    - Your own fork of PlassMAAG is added as a remote called `origin`
 ### Making an new PR
 Syncronize the master branches between your repo and upstream.
 Do this before making any new branches from master.
@@ -59,7 +59,7 @@ $ git switch -c kmer-compression
 ```
 
 Write your code, then test it.
-This requires you to have installed Vamb (preferentially with `pip install -e .`),
+This requires you to have installed PlassMAAG (preferentially with `pip install -e .`),
 and installed `pytest` and `ruff`:
 ```shell
 $ python -m pytest # test the code
@@ -75,5 +75,5 @@ $ git commit # then write a commit message
 $ git push -u origin kmer-compression
 ```
 
-Navigate to Vamb's GitHub repo (the `upstream` one), then on the Pull Requests tab make a new PR from `kmer-compression`
+Navigate to PlassMAAG's GitHub repo (the `upstream` one), then on the Pull Requests tab make a new PR from `kmer-compression`
 to `upstream`'s master.

@@ -5,10 +5,10 @@ import sys
 import rich_click as click
 from loguru import logger
 
-from workflow_PlasMAAG.click_file_types import OneOrMoreSnakemakeArguments, WssFile
-from workflow_PlasMAAG.command_line_runners import CliRunner, SnakemakeRunner
-from workflow_PlasMAAG.environment import EnvironmentManager
-from workflow_PlasMAAG.richclick_options import *
+from PlasMAAG.click_file_types import OneOrMoreSnakemakeArguments, WssFile
+from PlasMAAG.command_line_runners import CliRunner, SnakemakeRunner
+from PlasMAAG.environment import EnvironmentManager
+from PlasMAAG.richclick_options import *
 
 
 @click.command()
@@ -59,7 +59,6 @@ Passing in this file means that the pipeline will not assemble the reads but run
     help="Number of threads to run the application with",
     show_default=True,
     type=int,
-    default=1,
 )
 @click.option(
     "-o",
@@ -70,7 +69,7 @@ Passing in this file means that the pipeline will not assemble the reads but run
 @click.option(
     "-d",
     "--genomad_db",
-    help="Path to the genomad database",
+    help="Path to the genomad database, if it's already installed",
     type=click.Path(exists=False),
 )
 @click.option(
@@ -95,7 +94,7 @@ Passing in this file means that the pipeline will not assemble the reads but run
     "-s",
     "--snakemake_arguments",
     type=OneOrMoreSnakemakeArguments(),
-    help="String of white space seperated snakemake arguments. eg. workflow_plamb <options> --snakemake_arguments '-n -p'",
+    help="String of white space seperated snakemake arguments. eg. PlasMAAG <options> --snakemake_arguments '-n -p'",
 )
 def main(
     setup_env,
@@ -109,11 +108,11 @@ def main(
     genomad_db,
 ):
     """
-    \bThis is a program to run the PlasMAAG Snakemake pipeline to bin plasmids from metagenomic reads.
-    The first time running the program it will try to install the genomad database (~3.1 G) and required scripts.
+    \bThis is a program to run PlasMAAG to bin plasmids from metagenomic reads.
+    The first time running the program it will try to install the genomad database (~3.1 G) and required tools.
     For running the pipeline either the --reads or the --reads_and_assembly_dir arguments are required.
-    Additionally, the --output argument is required which defines the output directory.
-    For Quick Start please see the README: https://github.com/RasmussenLab/vamb/blob/vamb_n2v_asy/workflow_plamb/README.md
+    Additionally, the --output argument is required (which defines the output directory) and the --threads argument.
+    For Quick Start please see the README: https://github.com/RasmussenLab/PlasMAAG
     """
 
     if cli_dryrun:
@@ -135,6 +134,11 @@ def main(
             "--output is required",
         )
 
+    if threads is None:
+        raise click.BadParameter(
+            "--threads is a required argument",
+        )
+
     if reads_and_assembly_dir is not None and reads is not None:
         raise click.BadParameter(
             "Both --reads_and_assembly and --reads are used, only use one of them",
@@ -151,6 +155,7 @@ def main(
 
     snakemake_runner = SnakemakeRunner(snakefile="snakefile.smk")
     snakemake_runner.add_arguments(["-c", str(threads)])
+    snakemake_runner.add_arguments(["-p"]) # Print out verbose information about snakemake run
 
     if genomad_db is not None:
         logger.info(f"Setting genomad database path to {genomad_db}")
