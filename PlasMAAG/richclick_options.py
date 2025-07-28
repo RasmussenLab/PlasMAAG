@@ -25,6 +25,7 @@ click.rich_click.OPTION_GROUPS = {
                 "--snakemake_arguments",
                 "--setup_env",
                 "--genomad_db",
+                "--vamb_arguments",
                 "--help",
             ],
             "table_styles": {
