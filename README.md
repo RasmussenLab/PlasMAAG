@@ -57,9 +57,11 @@ The path to the SPAdes output directory (under the assembly_dir column in the ab
 | The simplified assembly graphs      | `assembly_graph_after_simplification.gfa` |
 | A metadata file                     | `contigs.paths`                         |
 
-If interested on executing a testrun of PlasMAAG, please check the Zenodo entry [here](https://zenodo.org/records/15263434). 
-
 To see all options for the program run `PlasMAAG --help`
+
+If interested in executing a testrun of PlasMAAG, please check the section ["Running the tool on test data
+"](#Running-the-tool-on-test-data) or the Zenodo entry [here](https://zenodo.org/records/15263434). 
+
 
 ## Output files
 The program produces three directories in the output directory choosen
@@ -93,6 +95,32 @@ The *log* directory contains the output from the various rules called in the sna
 So for example `< output directory > /log/intermidiate_files_run_contrastive_VAE` would contain the log produced by running the `contrastive_VAE` rule in snakemake. 
  
 The *intermidiate_files* directory contains the intermidiate files from the pipeline. 
+
+## Running the tool on test data
+Start of by setting up the tool:
+```
+git clone https://github.com/RasmussenLab/PlasMAAG
+conda env create -n PlasMAAG --file=PlasMAAG/envs/PlasMAAG.yaml
+conda activate PlasMAAG
+```
+Then download the test data
+```
+wget -O input_data.tar.gz .tar https://zenodo.org/records/15263434/files/input_data.tar.gz\?download\=1
+tar -xvf input_data.tar.gz
+```
+Lastly run PlasMAAG. Here we pass in additional options to the VAE part of PlasMAAG (using <`vamb-arguments`), to have the tool work on the extremly small test dataset. Notice that the test dataset contains the `read_and_assembly_file.txt` file which is the configuration of the test data paths.
+```
+cd input_data
+PlasMAAG --reads_and_assembly_dir read_and_assembly_file.txt --output test_run_PlasMAAG --threads 8 --vamb-arguments '-o C -e 200 -q 25 75 150 --seed 1'
+```
+Once the workflow finishes, several files and folders will be generated within the test_run_PlasMAAG directory. The final output files of the pipeline can be found in the the test_run_PlasMAAG/results directory, containing:
+```
+candidate_plasmids.tsv # The candidate plasmids
+candidate_genomes.tsv # The candidate chromosomes
+candidate_plasmids # Directory with the candidate plasmids fasta files
+candidate_genomes # Directory with the candidate chromosomes fasta files
+scores.tsv # The aggregated scores for each plasmid and genome cluster
+```
 
 ## Advanced
 ### Using an already downloaded geNomad database
