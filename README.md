@@ -111,10 +111,10 @@ wget -O input_data.tar.gz .tar https://zenodo.org/records/15263434/files/input_d
 tar -xvf input_data.tar.gz
 ```
 Lastly run PlasMAAG.  
-_Here we pass in additional options to the VAE part of PlasMAAG (using <`--vamb-arguments`), to have the tool work on the extremly small test dataset._
+_Here we pass in additional options to the VAE part of PlasMAAG (using <`--vamb_arguments`), to have the tool work on the extremly small test dataset._
 ```
 cd input_data
-PlasMAAG --reads_and_assembly_dir read_and_assembly_file.txt --output test_run_PlasMAAG --threads 8 --vamb-arguments '-o C -e 200 -q 25 75 150 --seed 1'
+PlasMAAG --reads_and_assembly_dir read_and_assembly_file.txt --output test_run_PlasMAAG --threads 8 --vamb_arguments '-o C -e 200 -q 25 75 150 --seed 1'
 ```
 Once the workflow finishes, several files and folders will be generated within the test_run_PlasMAAG directory. The final output files of the pipeline can be found in the the test_run_PlasMAAG/results directory, containing:
 ```
