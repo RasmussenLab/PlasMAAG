@@ -5,15 +5,17 @@ channels:
   - bioconda
 
 dependencies:
-  - python==3.10.2
+  # - python==3.10.2
+  - python==3.11.2
   - pip
   - pip:
-      - -e .
-  - snakemake
-  - minimap2
-  - samtools
-  - spades
-  - blast
-  - networkx
+      - -e ..
+  # - snakemake==7.32.4
+  - snakemake==8.27.1
+  - samtools==1.18
+  - blast==2.15.0
+  - networkx==3.4.2
   - pysam
   - biopython
+  # - minimap2==2.24
+  # - spades==3.15.5

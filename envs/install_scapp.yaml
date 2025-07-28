@@ -1,5 +1,0 @@
-name: scapp
-channels:
-  - bioconda
-dependencies:
-  - scapp

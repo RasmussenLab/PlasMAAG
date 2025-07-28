@@ -6,7 +6,7 @@ channels:
 
 dependencies:
   - python==3.12
-  - networkx
+  - networkx==3.4.2
   - pip
   - pip:
-      - fastnode2vec
+      - fastnode2vec==0.05

@@ -4,4 +4,4 @@ channels:
   - bioconda
 
 dependencies:
-  - genomad
+  - genomad==1.11.1

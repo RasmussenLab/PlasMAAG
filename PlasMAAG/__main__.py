@@ -108,7 +108,7 @@ def main(
     genomad_db,
 ):
     """
-    \bThis is a program to run PlasMAAG to bin plasmids from metagenomic reads.
+    \bPlasMAAG is a tool to recover plasmids and organisms from metagenomic samples.
     The first time running the program it will try to install the genomad database (~3.1 G) and required tools.
     For running the pipeline either the --reads or the --reads_and_assembly_dir arguments are required.
     Additionally, the --output argument is required (which defines the output directory) and the --threads argument.

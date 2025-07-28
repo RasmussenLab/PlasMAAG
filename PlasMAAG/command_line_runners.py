@@ -53,7 +53,7 @@ class SnakemakeRunner(CliRunner):
 
     output_directory = os.getcwd()
     _snakemake_path = shutil.which("snakemake")
-    _src_dir = Path(os.path.dirname(os.path.realpath(__file__))).parent.parent
+    _src_dir = Path(os.path.dirname(os.path.realpath(__file__))).parent
 
     def __init__(self, snakefile: str = "snakefile.smk"):
         super().__init__()
