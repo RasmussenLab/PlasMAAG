@@ -108,7 +108,8 @@ Then download the test data
 wget -O input_data.tar.gz .tar https://zenodo.org/records/15263434/files/input_data.tar.gz\?download\=1
 tar -xvf input_data.tar.gz
 ```
-Lastly run PlasMAAG. Here we pass in additional options to the VAE part of PlasMAAG (using <`vamb-arguments`), to have the tool work on the extremly small test dataset. Notice that the test dataset contains the `read_and_assembly_file.txt` file which is the configuration of the test data paths.
+Lastly run PlasMAAG.  
+_Here we pass in additional options to the VAE part of PlasMAAG (using <`--vamb-arguments`), to have the tool work on the extremly small test dataset._
 ```
 cd input_data
 PlasMAAG --reads_and_assembly_dir read_and_assembly_file.txt --output test_run_PlasMAAG --threads 8 --vamb-arguments '-o C -e 200 -q 25 75 150 --seed 1'
