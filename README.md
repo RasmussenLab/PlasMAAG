@@ -1,27 +1,31 @@
 
 # PlasMAAG 
 
-PlasMAAG (**Plas**mid and organism **M**etagenomic binning using **A**ssembly **A**lignment **G**raphs) is a framework to recover **plasmids** and **organisms** from **metagenomic** samples, offering state-of-the-art plasmid reconstruction with reduced computational costs.
+PlasMAAG is a tool to recover **plasmids** and **organisms** from **metagenomic** samples, offering state-of-the-art plasmid reconstruction.
 * On synthetic benchmark datasets, PlasMAAG reconstructs **50-121%** more near-complete confident plasmids than competing methods.
 * On hospital sewage samples, PlasMAAG outperforms all other methods, reconstructing **33%** more plasmid sequences.
   
+From FASTQ read files the tool will output:
+* FASTA files of the most likely plasmids found in the reads.
+* FASTA files of the most likely genomes found in the reads.  
+
+_If you don't want PlasMAAG to assemble the reads, you can also pass in the paths to the asssemblies._
+
 See the preprint for more information: ["Accurate plasmid reconstruction from metagenomics data using assembly-alignment graphs and contrastive learning"](https://www.biorxiv.org/content/10.1101/2025.02.26.640269v2.abstract)
 
 ## Quick Start :rocket:
 Clone the repository and install the package using conda
 ```
-git clone https://github.com/RasmussenLab/vamb -b vamb_n2v_asy 
-cd vamb/workflow_PlasMAAG 
-conda env create -n PlasMAAG --file=envs/PlasMAAG.yaml
+git clone https://github.com/RasmussenLab/PlasMAAG
+conda env create -n PlasMAAG --file=PlasMAAG/envs/PlasMAAG.yaml
 ```
 To use the program activate the conda environment
 ```
 conda activate PlasMAAG
 ```
-
- To run the entire pipeline including assembly pass in a whitespace separated file containing the reads:
+To run the entire pipeline including assembly pass in a whitespace separated file containing the reads:
 ```
-PlasMAAG --reads <read_file>  --output <output_directory>
+PlasMAAG --reads <read_file>  --output <output_directory> --threads <number_of_threads_to_use>
 ```
 The <read_file> could look like:
 
@@ -36,7 +40,7 @@ To dry run the pipeline before pass in the --dryrun flag
 
 To run the pipeline from already assembled reads pass in a whitespace separated file containing the reads and the path to the spades assembly directories for each read pair.
 ```
-PlasMAAG --reads_and_assembly_dir <reads_and_assembly_dir>  --output <output_directory>
+PlasMAAG --reads_and_assembly_dir <reads_and_assembly_dir>  --output <output_directory> --threads <number_of_threads_to_use>
 ```
 The `reads_and_assembly_dir` file could look like:
 ``` 
@@ -54,6 +58,8 @@ The path to the SPAdes output directory (under the assembly_dir column in the ab
 | A metadata file                     | `contigs.paths`                         |
 
 If interested on executing a testrun of PlasMAAG, please check the Zenodo entry [here](https://zenodo.org/records/15263434). 
+
+To see all options for the program run `PlasMAAG --help`
 
 ## Output files
 The program produces three directories in the output directory choosen
