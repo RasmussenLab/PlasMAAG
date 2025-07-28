@@ -6,8 +6,8 @@ PlasMAAG is a tool to recover **plasmids** and **organisms** from **metagenomic*
 * On hospital sewage samples, PlasMAAG outperforms all other methods, reconstructing **33%** more plasmid sequences.
   
 From FASTQ read files the tool will output:
-* FASTA files of the most likely plasmids found in the reads.
-* FASTA files of the most likely genomes found in the reads.  
+* FASTA files of the most likely plasmids found in the reads (For genomes these are refered to as MAG's).
+* FASTA files of the most likely genomes found in the reads (Normally refered to as MAG's).  
 
 _If you don't want PlasMAAG to assemble the reads, you can also pass in the paths to the asssemblies._
 
@@ -74,8 +74,10 @@ The program produces three directories in the output directory choosen
 The *results* directory contains:
 ````
 results
-├── candidate_plasmids.tsv : The candidate plasmids
-├── candidate_genomes.tsv : The candidate chromosomes
+├── candidate_plasmids/ : A directory containing the the candidate plasmids
+├── candidate_genomes/ : A directory containing the candidate chromosomes
+├── candidate_plasmids.tsv : An overview of which contigs are binned together as candidate plasmids
+├── candidate_genomes.tsv : An overview of which contigs are binned together as candidate chromosomes
 └── scores.tsv : The aggregated scores for each cluster 
 ````
 The `candidate_plasmids.tsv` and `candidate_genomes.tsv` files are formatted as:
@@ -220,7 +222,4 @@ snakemake <arguments> --config genomad_database=<path_to_genomad_database>
 ```
 
 # TODO
-- [ ] Lock in package versions for conda such that we do not need to solve the environments each time, and for reproducibility
 - [ ] Test that cluster submit works
-      - plasmid_bins/ *.fna 
-      - nonplasmid_bins/ *.fna 

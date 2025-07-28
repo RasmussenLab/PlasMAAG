@@ -3,5 +3,5 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - samtools==1.18
+  - samtools==1.22.1
   - strobealign==0.16.1
