@@ -9,4 +9,4 @@ dependencies:
   - networkx==3.4.2
   - pip
   - pip:
-      - fastnode2vec==0.05
+      - fastnode2vec==0.0.7
