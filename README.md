@@ -147,16 +147,6 @@ default_mem_gb: 50
 ```
 If these exceed the resourcess available they will be scaled down to match the hardware available. 
 
-### Running on cluster [! needs to be tested also w.r.t to specific snakemake version as they changed how to submit to a cluster through snakemake !]
-You can extend the arguments passed to snakemake by the '--snakemake_arguments' flag
-This can then be used to have snakemake submit jobs to a cluster.
-on PBS this could like:
-```
-PlasMAAG  <arguments> --snakemake_arguments \
-    '--jobs 16 --max-jobs-per-second 5 --max-status-checks-per-second 5 --latency-wait 60 \
-    --cluster "sbatch  --output={rule}.%j.o --error={rule}.%j.e \
-    --time={resources.walltime} --job-name {rule} --cpus-per-task {threads} --mem {resources.mem_gb}G "'
-```
 ### Running using snakemake CLI directly 
 The pipeline can be run without using the CLI wrapper around snakemake. 
 For using snakemake refer to the snakemake documentation: <https://snakemake.readthedocs.io/en/stable/>
@@ -164,7 +154,7 @@ For using snakemake refer to the snakemake documentation: <https://snakemake.rea
 #### Running from Reads using snakemake directly
 To run the entire pipeline including assembly pass in a whitespace separated file containing the reads to snakemake using to the config flag in the snakemake CLI:
 ```
-snakemake --use-conda --cores <number_of_cores> --snakefile <path_to_snakefile> --config read_file=<read_file>
+snakemake --use-conda --cores <number_of_cores> --snakefile <path_to_snakefile> --config read_file=<read_file> output_directory=<output_directory>
 ```
 The <read_file> could look like:
 
@@ -178,7 +168,7 @@ im/a/path/to/sample_2/read1    im/a/path/to/sample_2/read2
 #### Running from assembled reads using snakemake directly
 To run the pipeline from allready assembled reads pass in a whitespace separated file containing the reads and the path to the spades assembly directories for each read pair to the config flag in snakemake.
 ```
-snakemake --use-conda --cores <number_of_cores> --snakefile <path_to_snakefile> --config read_assembly_dir=<reads_and_assembly_dir_file>
+snakemake --use-conda --cores <number_of_cores> --snakefile <path_to_snakefile> --config read_assembly_dir=<reads_and_assembly_dir_file>  output_directory=<output_directory>
 ```
 
 The reads_and_assembly_dir_file could look like:
@@ -196,30 +186,26 @@ This assembly_dir directory filepath must contain the following 3 files which Sp
 | The simplified assembly graphs      | `assembly_graph_after_simplification.gfa` |
 | A metadata file                     | `contigs.paths`                         |
 
+### Running on a cluster with snakemake submiting jobs 
+For running PlasMAAG on a cluster with snakemake submiting jobs see the documentation for snakemake [here](https://snakemake.readthedocs.io/en/v7.19.1/executing/cluster.html)  
+An example is provided below for reference using slurm running PlasMAAG from reads:
+Start off by installing the cluster-generic executor plugin for snakemake
+```
+pip install snakemake-executor-plugin-cluster-generic
+```
+Then run the PlasMAAG snakemake pipeline:
+```
+snakemake --use-conda --snakefile <path_to_snakefile> --config read_assembly_dir=<reads_and_assembly_dir_file> output_directory=<output_directory> \
+  --jobs 2 --max-jobs-per-second 5 --max-status-checks-per-second 5 --latency-wait 60 \
+  --executor cluster-generic --cluster-generic-submit-cmd 'sbatch --job-name {rule} --time={resources.walltime} --cpus-per-task {threads} --mem {resources.mem_gb}G'
+```
 #### Ressources for the different snakemake rules when using snakemake directly
-To define resources for the specific snakemake rules either edit the snakemake.smk file directly or pass in a YAML config-file describing the resource use for each rule. 
-```
-snakemake <arguments> --configfile <config_file.yaml>
-```
-For a specification of the configfile refer to the ``` config/config.yaml ``` file.
-Here the resources for each rule can be configurated as follows
-```
-spades:
-  walltime: "15-00:00:00"
-  threads: 16
-  mem_gb: 60
-```
-if no resourcess are configurated for a rule the defaults will be used which are also defined in: ``` config/config.yaml ```  as
-```
-default_walltime: "48:00:00"
-default_threads: 16
-default_mem_gb: 50
-```
+To define resources for the specific snakemake rules edit the `config/config.yaml` file
+For more information see the ["Resources" section](#Resources).
+
 #### Using an allready downloaded geNomad database 
 To use an allready downloaded database, pass in a path to the genomad database using the config flag
 ```
 snakemake <arguments> --config genomad_database=<path_to_genomad_database>
 ```
 
-# TODO
-- [ ] Test that cluster submit works

@@ -18,6 +18,8 @@ SRC_DIR = THIS_FILE_DIR / "files_used_in_snakemake_workflow"
 
 # Get the output_directory defined by the user or fallback to current directory, which is the default way snakemake handles output directories
 OUTDIR = Path("") if config.get("output_directory") is None else Path(config.get("output_directory"))
+if not OUTDIR.exists():
+    OUTDIR.mkdir()
 
 #### Setting parameters from the config file ####
 ##  For a more throughout description of what the different config options mean see the /config/config.yaml file
