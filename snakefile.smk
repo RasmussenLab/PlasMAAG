@@ -43,6 +43,11 @@ N2V_Q= config.get("n2v_q", 2.0)
 PLAMB_PARAMS = config.get("plamb_params", ' -o C ') 
 PLAMB_PRELOAD = config.get("plamb_preload", "") 
 
+# Create opton for user to pass in vamb arguments from CLI. Usefull for easy example on small dataset.
+vamb_arguments = config.get("vamb_arguments", None)
+if vamb_arguments is not None:
+    PLAMB_PARAMS = vamb_arguments
+
 # Other options
 CUDA = True if config.get("cuda") ==  "True" else False
 NEIGHS_R=config.get("neighs_r", '0.1') 

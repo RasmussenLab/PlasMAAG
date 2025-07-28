@@ -96,6 +96,11 @@ Passing in this file means that the pipeline will not assemble the reads but run
     type=OneOrMoreSnakemakeArguments(),
     help="String of white space seperated snakemake arguments. eg. PlasMAAG <options> --snakemake_arguments '-n -p'",
 )
+@click.option(
+    "-v",
+    "--vamb_arguments",
+    help="Arguments to pass to vamb",
+)
 def main(
     setup_env,
     reads,
@@ -106,6 +111,7 @@ def main(
     cli_dryrun,
     snakemake_arguments,
     genomad_db,
+    vamb_arguments
 ):
     """
     \bPlasMAAG is a tool to recover plasmids and organisms from metagenomic samples.
@@ -156,6 +162,9 @@ def main(
     snakemake_runner = SnakemakeRunner(snakefile="snakefile.smk")
     snakemake_runner.add_arguments(["-c", str(threads)])
     snakemake_runner.add_arguments(["-p"]) # Print out verbose information about snakemake run
+
+    if vamb_arguments is not None:
+        snakemake_runner.add_to_config(f"vamb_arguments={vamb_arguments}")
 
     if genomad_db is not None:
         logger.info(f"Setting genomad database path to {genomad_db}")
