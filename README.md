@@ -107,7 +107,7 @@ conda activate PlasMAAG
 ```
 Then download the test data
 ```
-wget -O input_data.tar.gz .tar https://zenodo.org/records/15263434/files/input_data.tar.gz\?download\=1
+wget -O input_data.tar.gz https://zenodo.org/records/15263434/files/input_data.tar.gz\?download\=1
 tar -xvf input_data.tar.gz
 ```
 Lastly run PlasMAAG.  
