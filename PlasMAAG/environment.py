@@ -8,7 +8,7 @@ from PlasMAAG.command_line_runners import CliRunner, SnakemakeRunner
 
 
 class EnvironmentManager:
-    _src_dir = Path(Path(os.path.dirname(os.path.realpath(__file__)))).parent.parent
+    _src_dir = Path(Path(os.path.dirname(os.path.realpath(__file__)))).parent
     _genomad_dir = _src_dir / "genomad_db"
     _genomad_db_exist = (_genomad_dir).exists()
 
