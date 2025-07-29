@@ -139,13 +139,13 @@ spades:
   threads: 16
   mem_gb: 60
 ```
-if no resourcess are configurated for a rule the defaults will be used which are also defined in: ``` config/config.yaml ```  as
+if no resources are configurated for a rule the defaults will be used which are also defined in: ``` config/config.yaml ```  as
 ```
 default_walltime: "48:00:00"
 default_threads: 16
 default_mem_gb: 50
 ```
-If these exceed the resourcess available they will be scaled down to match the hardware available. 
+If these exceed the resources available they will be scaled down to match the hardware available. 
 
 ### Running using snakemake CLI directly 
 The pipeline can be run without using the CLI wrapper around snakemake. 
@@ -199,7 +199,7 @@ snakemake --use-conda --snakefile <path_to_snakefile> --config read_assembly_dir
   --jobs 2 --max-jobs-per-second 5 --max-status-checks-per-second 5 --latency-wait 60 \
   --executor cluster-generic --cluster-generic-submit-cmd 'sbatch --job-name {rule} --time={resources.walltime} --cpus-per-task {threads} --mem {resources.mem_gb}G'
 ```
-#### Ressources for the different snakemake rules when using snakemake directly
+#### Resources for the different snakemake rules when using snakemake directly
 To define resources for the specific snakemake rules edit the `config/config.yaml` file
 For more information see the ["Resources" section](#Resources).
 
