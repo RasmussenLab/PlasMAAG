@@ -20,3 +20,5 @@ doc/reference
 workflow_PlasMAAG/src/workflow_PlasMAAG.egg-info/PKG-INFO
 PlasMAAG.egg-info
 genomad_db
+PlasMAAG_core.egg-info
+PlasMAAGcore.egg-info
