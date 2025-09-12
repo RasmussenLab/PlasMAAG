@@ -31,7 +31,7 @@ from . import encode_n2v_asimetric
 from . import git_commit
 from loguru import logger
 
-__version_str__ = get_version("PlasMAAG")
+__version_str__ = get_version("PlasMAAG_core")
 logger.remove()
 
 __all__ = [
