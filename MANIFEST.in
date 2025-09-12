@@ -1,1 +1,4 @@
 include vamb/kernel.npz
+include PlasMAAG/snakefile.smk
+include PlasMAAG/envs/*
+
