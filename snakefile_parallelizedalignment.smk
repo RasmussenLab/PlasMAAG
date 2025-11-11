@@ -342,7 +342,7 @@ rule makeblastdbs:
     shell:
         """
         gunzip -c {input} |makeblastdb -in - -dbtype nucl -out {params} -title contigs_{wildcards.sampleB}.db 2> {log}
-        touch {output[1]}
+        touch {output}
         """
 
 rulename = "makeblastdbs_all_samples"
