@@ -333,15 +333,16 @@ rule makeblastdbs:
         #OUTDIR / "{key}/assembly_mapping_output/contigs.flt.fna.gz",
         OUTDIR / "{key}/assembly_mapping_output/spades_{sampleB}/contigs.flt.fna.gz"
     output:
-        os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','contigs_{sampleB}.db'), # TODO should be made?
+        
         os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/sample_pairwise/makeblastdbs_{sampleB}.finished')
+    params: os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','contigs_{sampleB}.db'), # TODO should be made?
     threads: threads_fn("makeblastdbs")
     resources: walltime = walltime_fn("makeblastdbs"), mem_gb = mem_gb_fn("makeblastdbs")
     benchmark: config.get("benchmark", "benchmark/") + "{key}_{sampleB}" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{sampleB}" + rulename
     shell:
         """
-        gunzip -c {input} |makeblastdb -in - -dbtype nucl -out {output[0]} -title contigs_{wildcards.sampleB}.db 2> {log}
+        gunzip -c {input} |makeblastdb -in - -dbtype nucl -out {params} -title contigs_{wildcards.sampleB}.db 2> {log}
         touch {output[1]}
         """
 
@@ -366,18 +367,18 @@ rulename = "align_contigs_per_sample"
 rule align_contigs_per_sample:
     input:
         OUTDIR / "{key}/assembly_mapping_output/spades_{sampleA}/contigs.flt.fna.gz",
-        os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','contigs_{sampleB}.db'),
         os.path.join(OUTDIR,"{key}",'rule_completed_checks','blastn','makeblastdbs_all_samples.finished')
     output:
         os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','blast_{sampleA}_{sampleB}.txt'),
         os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/align_contigs_{sampleA}_{sampleB}.finished')
+    params: os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','contigs_{sampleB}.db'),
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
     benchmark: config.get("benchmark", "benchmark/") + "{key}_{sampleA}_{sampleB}_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{sampleA}_{sampleB}_" + rulename
     shell:
         """
-        gunzip -c {input[0]} |blastn -query - -db {input[1]} -out {output[0]}.redundant -outfmt 6 -perc_identity 95 -num_threads {threads} -max_hsps 1000000 2>> {log}
+        gunzip -c {input[0]} |blastn -query - -db {params} -out {output[0]}.redundant -outfmt 6 -perc_identity 95 -num_threads {threads} -max_hsps 1000000 2>> {log}
         awk '$1 != $2 && $4 >= 500' {output[0]}.redundant > {output[0]} 2>> {log}
         touch {output[1]}
         """
