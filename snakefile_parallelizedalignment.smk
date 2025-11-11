@@ -371,49 +371,48 @@ rule makeblastdbs_all_samples:
         touch {output}
         """
 
-# rulename = "align_contigs_per_sample"
-# rule align_contigs_per_sample:
-#     input:
-#         OUTDIR / "{key}/assembly_mapping_output/contigs.flt.fna.gz",
-#         os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','contigs_{wildcards.sampleB}.db'),
-#         os.path.join(OUTDIR,"{key}",'rule_completed_checks','blastn','makeblastdbs_all_samples.finished')
-#     output:
-#         os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','blast_{wildcards.sampleA}_{wildcards.sampleB}.txt'),
-#         os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/align_contigs_{wildcards.sampleA}_{wildcards.sampleB}.finished')
-#     threads: threads_fn(rulename)
-#     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-#     benchmark: config.get("benchmark", "benchmark/") + "{key}_{wildcards.sampleA}_{wildcards.sampleB}_" + rulename
-#     log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{wildcards.sampleA}_{wildcards.sampleB}_" + rulename
-#     shell:
-#         """
-#         gunzip -c {input[0]} | grep S{wildcards.sampleA}C |blastn -query - -db {input[1]} -out {output[0]}.redundant -outfmt 6 -perc_identity 95 -num_threads {threads} -max_hsps 1000000 2>> {log}
-#         awk '$1 != $2 && $4 >= 500' {output[0]}.redundant > {output[0]} 2>> {log}
-#         touch {output[1]}
-#         """
+rulename = "align_contigs_per_sample"
+rule align_contigs_per_sample:
+    input:
+        OUTDIR / "{key}/assembly_mapping_output/spades_{sampleA}/contigs.flt.fna.gz"
+        os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','contigs_{sampleB}.db'),
+        os.path.join(OUTDIR,"{key}",'rule_completed_checks','blastn','makeblastdbs_all_samples.finished')
+    output:
+        os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','blast_{sampleA}_{sampleB}.txt'),
+        os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/align_contigs_{sampleA}_{sampleB}.finished')
+    threads: threads_fn(rulename)
+    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+    benchmark: config.get("benchmark", "benchmark/") + "{key}_{sampleA}_{sampleB}_" + rulename
+    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{sampleA}_{sampleB}_" + rulename
+    shell:
+        """
+        gunzip -c {input[0]} |blastn -query - -db {input[1]} -out {output[0]}.redundant -outfmt 6 -perc_identity 95 -num_threads {threads} -max_hsps 1000000 2>> {log}
+        awk '$1 != $2 && $4 >= 500' {output[0]}.redundant > {output[0]} 2>> {log}
+        touch {output[1]}
+        """
 
-# rulename = "align_all_samples"
-# rule align_all_samples:
-#     input:
-#         expand(os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','blast_{sampleA}_{sampleB}.txt'),
-#                sampleA=[a for a, b in SAMPLE_PAIRS],
-#                sampleB=[b for a, b in SAMPLE_PAIRS],key=sample_id.keys()),
-#         expand(
-#             os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/align_contigs_{sampleA}_{sampleB}.finished'),
-#                sampleA=[a for a, b in SAMPLE_PAIRS],
-#                sampleB=[b for a, b in SAMPLE_PAIRS],key=sample_id.keys())
-
-#     output:
-#         os.path.join(OUTDIR,"{key}",'blastn','blastn_against_all.txt'),
-#         os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/align_contigs.finished')
-#     threads: threads_fn(rulename)
-#     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-#     benchmark: config.get("benchmark", "benchmark/") + "{key}_" + rulename
-#     log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
-#     shell:
-#         """
-#         cat {input[0]} >> {output[0]} 2> {log}
-#         touch {output[1]}
-#         """
+rulename = "align_all_samples"
+rule align_all_samples:
+    input:
+        lambda wildcards:  expand(os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','blast_{sampleA}_{sampleB}.txt'),
+               sampleA=[a for a, b in SAMPLE_PAIRS],
+               sampleB=[b for a, b in SAMPLE_PAIRS],key=sample_id.keys()),
+        lambda wildcards: expand(
+            os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/align_contigs_{sampleA}_{sampleB}.finished'),
+               sampleA=[a for a, b in SAMPLE_PAIRS],
+               sampleB=[b for a, b in SAMPLE_PAIRS],key=sample_id.keys())
+    output:
+        os.path.join(OUTDIR,"{key}",'blastn','blastn_against_all.txt'),
+        os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/align_contigs.finished')
+    threads: threads_fn(rulename)
+    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+    benchmark: config.get("benchmark", "benchmark/") + "{key}_" + rulename
+    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
+    shell:
+        """
+        cat {input[0]} >> {output[0]} 2> {log}
+        touch {output[1]}
+        """
 
 # ## 2. Generate nx graph per sample for graphs from gfa assembly graphs for each "sample"
 # rulename = "weighted_assembly_graphs"
