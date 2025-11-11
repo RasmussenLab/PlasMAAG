@@ -112,7 +112,7 @@ read_fw = lambda wildcards: sample_id_path[wildcards.key][wildcards.id][0]
 read_rv =  lambda wildcards: sample_id_path[wildcards.key][wildcards.id][1]
 
 ##
-print(df)
+print(sample_id["intermidiate_files"])
 SAMPLE_PAIRS = [(a, b) for a, b in itertools.combinations([sample_id["intermidiate_files"]], 2)]
 print(SAMPLE_PAIRS)
 
