@@ -341,7 +341,7 @@ rule makeblastdbs:
     log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{sampleB}" + rulename
     shell:
         """
-        gunzip -c {input} | # I have to create a rule that filters samplecontigs larger than 2kb so I can set it here as input  |makeblastdb -in - -dbtype nucl -out {output[0]} -title contigs_{sampleB}.db 2> {log}
+        gunzip -c {input} | # I have to create a rule that filters samplecontigs larger than 2kb so I can set it here as input  |makeblastdb -in - -dbtype nucl -out {output[0]} -title contigs_{wildcards.sampleB}.db 2> {log}
         touch {output[1]}
         """
 
