@@ -343,12 +343,12 @@ rule makeblastdbs:
         #OUTDIR / "{key}/assembly_mapping_output/contigs.flt.fna.gz",
         OUTDIR / "{key}/assembly_mapping_output/spades_{id}/contigs.flt.fna.gz"
     output:
-        os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','contigs_{wildcards.sampleB}.db'), # TODO should be made?
-        os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/makeblastdbs_{wildcards.sampleB}.finished')
+        os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','contigs_{sampleB}.db'), # TODO should be made?
+        os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/makeblastdbs_{sampleB}.finished')
     threads: threads_fn("makeblastdbs")
     resources: walltime = walltime_fn("makeblastdbs"), mem_gb = mem_gb_fn("makeblastdbs")
-    benchmark: config.get("benchmark", "benchmark/") + "{key}_{wildcards.sampleB}" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{wildcards.sampleB}" + rulename
+    benchmark: config.get("benchmark", "benchmark/") + "{key}_{sampleB}" + rulename
+    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{sampleB}" + rulename
     shell:
         """
         gunzip -c {input} | # I have to create a rule that filters samplecontigs larger than 2kb so I can set it here as input  |makeblastdb -in - -dbtype nucl -out {output.db_name} -title contigs_{wildcards.sampleB}.db 2> {log}
