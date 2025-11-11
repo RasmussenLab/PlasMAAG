@@ -158,8 +158,8 @@ rule all:
     #     python {params.path} --cls_pl {output.candidate_plasmids} --cls_nonpl {output.candidate_genomes} --contigs {input.contigs} --outdir {output.results_dir}
     #     """
 
-If the genomad database is given as an argument don't download it again
-This works boths from when the tool is called from the CLI wrapper and from snakemake if the config is extended setting the genomad_database variable
+#If the genomad database is given as an argument don't download it again
+#This works boths from when the tool is called from the CLI wrapper and from snakemake if the config is extended setting the genomad_database variable
 if config.get("genomad_database") is not None:
     geNomad_db = config.get("genomad_database")
 else:
