@@ -349,7 +349,8 @@ rulename = "makeblastdbs_all_samples"
 rule makeblastdbs_all_samples:
     input:
         lambda wildcards: expand(os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','contigs_{sampleB}.db'),
-               sampleB=[b for a, b in SAMPLE_PAIRS],key=sample_id.keys()),
+               sampleB=set([b for a, b in SAMPLE_PAIRS],key=sample_id.keys())
+               ),
     output:
         os.path.join(OUTDIR,"{key}",'rule_completed_checks','blastn','makeblastdbs_all_samples.finished')
     threads: threads_fn(rulename)
