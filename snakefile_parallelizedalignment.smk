@@ -374,7 +374,7 @@ rule makeblastdbs_all_samples:
 rulename = "align_contigs_per_sample"
 rule align_contigs_per_sample:
     input:
-        OUTDIR / "{key}/assembly_mapping_output/spades_{sampleA}/contigs.flt.fna.gz"
+        OUTDIR / "{key}/assembly_mapping_output/spades_{sampleA}/contigs.flt.fna.gz",
         os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','contigs_{sampleB}.db'),
         os.path.join(OUTDIR,"{key}",'rule_completed_checks','blastn','makeblastdbs_all_samples.finished')
     output:
