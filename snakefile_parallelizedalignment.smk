@@ -136,7 +136,7 @@ rule all:
         # candidate_plasmids_scores = expand(os.path.join(OUTDIR,"{key}",'contrastive_VAE',f'vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids_gN_scores.tsv'), key=sample_id.keys()),
         # contigs = expand(os.path.join(OUTDIR,"{key}",'assembly_mapping_output','contigs.flt.fna.gz'), key=sample_id.keys())
         #os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/align_contigs.finished')
-        os.path.join(OUTDIR,"{key}",'rule_completed_checks','blastn','makeblastdbs_all_samples.finished')
+        os.path.join(OUTDIR,"{key}",'rule_completed_checks','blastn','makeblastdbs_all_samples.finished',key=sample_id.keys())
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
     # output:
