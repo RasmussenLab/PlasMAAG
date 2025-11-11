@@ -158,128 +158,139 @@ rule all:
     #     python {params.path} --cls_pl {output.candidate_plasmids} --cls_nonpl {output.candidate_genomes} --contigs {input.contigs} --outdir {output.results_dir}
     #     """
 
-# If the genomad database is given as an argument don't download it again
-# This works boths from when the tool is called from the CLI wrapper and from snakemake if the config is extended setting the genomad_database variable
-# if config.get("genomad_database") is not None:
-#     geNomad_db = config.get("genomad_database")
-# else:
-#     geNomad_db = THIS_FILE_DIR / "genomad_db" / "genomad_db",
+If the genomad database is given as an argument don't download it again
+This works boths from when the tool is called from the CLI wrapper and from snakemake if the config is extended setting the genomad_database variable
+if config.get("genomad_database") is not None:
+    geNomad_db = config.get("genomad_database")
+else:
+    geNomad_db = THIS_FILE_DIR / "genomad_db" / "genomad_db",
 
-#     rulename = "download_genomad_db"
-#     rule download_genomad_db:
-#         output:
-#             geNomad_db_path = directory(geNomad_db),
-#             dir_geNomad_db = directory(THIS_FILE_DIR / "genomad_db"),
-#             geNomad_db = protected(THIS_FILE_DIR / "genomad_db" / "genomad_db" / "genomad_db"),
-#         threads: threads_fn(rulename)
-#         resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-#         conda: THIS_FILE_DIR / "envs/genomad.yaml"
-#         shell:
-#             """
-#             mkdir -p {output.dir_geNomad_db}
-#             genomad download-database {output.dir_geNomad_db}
-#             """
+    rulename = "download_genomad_db"
+    rule download_genomad_db:
+        output:
+            geNomad_db_path = directory(geNomad_db),
+            dir_geNomad_db = directory(THIS_FILE_DIR / "genomad_db"),
+            geNomad_db = protected(THIS_FILE_DIR / "genomad_db" / "genomad_db" / "genomad_db"),
+        threads: threads_fn(rulename)
+        resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+        conda: THIS_FILE_DIR / "envs/genomad.yaml"
+        shell:
+            """
+            mkdir -p {output.dir_geNomad_db}
+            genomad download-database {output.dir_geNomad_db}
+            """
 
-# # If only reads are passed run metaspades to assemble the reads
-# rulename = "spades"
-# rule spades:
-#     input:
-#        fw = read_fw,
-#        rv = read_rv,
-#     output:
-#        outdir = directory(OUTDIR / "{key}/assembly_mapping_output/spades_{id}"),
-#        outfile = OUTDIR / "{key}/assembly_mapping_output/spades_{id}/contigs.fasta",
-#        graph = OUTDIR / "{key}/assembly_mapping_output/spades_{id}/assembly_graph_after_simplification.gfa",
-#        graphinfo  = OUTDIR / "{key}/assembly_mapping_output/spades_{id}/contigs.paths",
-#     threads: threads_fn(rulename)
-#     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-#     benchmark: config.get("benchmark", "benchmark/") + "{key}_{id}_" + rulename
-#     log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{id}_" + rulename
-#     conda: THIS_FILE_DIR / "envs/spades_env.yaml"
-#     shell:
-#        "spades.py --meta "
-#        "-t {threads} -m 180 "
-#        "-o {output.outdir} -1 {input.fw} -2 {input.rv} "
-#        "-t {threads} --memory {resources.mem_gb} &> {log} "
+# If only reads are passed run metaspades to assemble the reads
+rulename = "spades"
+rule spades:
+    input:
+       fw = read_fw,
+       rv = read_rv,
+    output:
+       outdir = directory(OUTDIR / "{key}/assembly_mapping_output/spades_{id}"),
+       outfile = OUTDIR / "{key}/assembly_mapping_output/spades_{id}/contigs.fasta",
+       graph = OUTDIR / "{key}/assembly_mapping_output/spades_{id}/assembly_graph_after_simplification.gfa",
+       graphinfo  = OUTDIR / "{key}/assembly_mapping_output/spades_{id}/contigs.paths",
+    threads: threads_fn(rulename)
+    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+    benchmark: config.get("benchmark", "benchmark/") + "{key}_{id}_" + rulename
+    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{id}_" + rulename
+    conda: THIS_FILE_DIR / "envs/spades_env.yaml"
+    shell:
+       "spades.py --meta "
+       "-t {threads} -m 180 "
+       "-o {output.outdir} -1 {input.fw} -2 {input.rv} "
+       "-t {threads} --memory {resources.mem_gb} &> {log} "
 
-# # Rename the contigs to keep sample information for later use
-# rulename = "rename_contigs"
-# rule rename_contigs:
-#     input:
-#         contigs,
-#     output:
-#         OUTDIR / "{key}/assembly_mapping_output/spades_{id}/contigs.renamed.fasta"
-#     threads: threads_fn(rulename)
-#     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-#     benchmark: config.get("benchmark", "benchmark/") + "{key}_{id}_" + rulename
-#     log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{id}_" + rulename
-#     shell:
-#         """
-#         sed 's/^>/>S{wildcards.id}C/' {input} > {output} 2> {log}
-#         """
+# Rename the contigs to keep sample information for later use
+rulename = "rename_contigs"
+rule rename_contigs:
+    input:
+        contigs,
+    output:
+        OUTDIR / "{key}/assembly_mapping_output/spades_{id}/contigs.renamed.fasta"
+    threads: threads_fn(rulename)
+    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+    benchmark: config.get("benchmark", "benchmark/") + "{key}_{id}_" + rulename
+    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{id}_" + rulename
+    shell:
+        """
+        sed 's/^>/>S{wildcards.id}C/' {input} > {output} 2> {log}
+        """
+rulename = "filter_sample_contigs"
+rule filter_sample_contigs:
+    input: lambda wildcards: expand(OUTDIR / "{key}/assembly_mapping_output/spades_{id}/contigs.renamed.fasta", key=wildcards.key, id=sample_id[wildcards.key]),
+    output: OUTDIR / "{key}/assembly_mapping_output/spades_{id}/contigs.flt.fna.gz"
+    threads: threads_fn(rulename)
+    params: script =  SRC_DIR / "concatenate.py"
+    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+    benchmark: config.get("benchmark", "benchmark/") + "{key}_{id}_" + rulename
+    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{id}_" + rulename
+    shell:
+        "python {params.script} {output} {input} --keepnames -m {MIN_CONTIG_LEN} &> {log} "
 
-# # Cat the contigs together in one file to later map each pair of reads against all the contigs together
-# rulename="cat_contigs"
-# rule cat_contigs:
-#     input: lambda wildcards: expand(OUTDIR / "{key}/assembly_mapping_output/spades_{id}/contigs.renamed.fasta", key=wildcards.key, id=sample_id[wildcards.key]),
-#     output: OUTDIR / "{key}/assembly_mapping_output/contigs.flt.fna.gz"
-#     threads: threads_fn(rulename)
-#     params: script =  SRC_DIR / "concatenate.py"
-#     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-#     benchmark: config.get("benchmark", "benchmark/") + "{key}" + rulename
-#     log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
-#     shell:
-#         "python {params.script} {output} {input} --keepnames -m {MIN_CONTIG_LEN} &> {log} "
+# Cat the contigs together in one file to later map each pair of reads against all the contigs together
+rulename="cat_contigs"
+rule cat_contigs:
+    input: lambda wildcards: expand(OUTDIR / "{key}/assembly_mapping_output/spades_{id}/contigs.renamed.fasta", key=wildcards.key, id=sample_id[wildcards.key]),
+    output: OUTDIR / "{key}/assembly_mapping_output/contigs.flt.fna.gz"
+    threads: threads_fn(rulename)
+    params: script =  SRC_DIR / "concatenate.py"
+    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+    benchmark: config.get("benchmark", "benchmark/") + "{key}" + rulename
+    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
+    shell:
+        "python {params.script} {output} {input} --keepnames -m {MIN_CONTIG_LEN} &> {log} "
 
-# # Extract the contigs names for later use
-# rulename = "get_contig_names"
-# rule get_contig_names:
-#     input:
-#         OUTDIR / "{key}/assembly_mapping_output/contigs.flt.fna.gz"
-#     output:
-#         OUTDIR / "{key}/assembly_mapping_output/contigs.names.sorted"
-#     threads: threads_fn(rulename)
-#     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-#     benchmark: config.get("benchmark", "benchmark/") + "{key}_" + rulename
-#     log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
-#     shell:
-#         "zcat {input} | grep '>' | sed 's/>//' > {output} 2> {log} "
+# Extract the contigs names for later use
+rulename = "get_contig_names"
+rule get_contig_names:
+    input:
+        OUTDIR / "{key}/assembly_mapping_output/contigs.flt.fna.gz"
+    output:
+        OUTDIR / "{key}/assembly_mapping_output/contigs.names.sorted"
+    threads: threads_fn(rulename)
+    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+    benchmark: config.get("benchmark", "benchmark/") + "{key}_" + rulename
+    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
+    shell:
+        "zcat {input} | grep '>' | sed 's/>//' > {output} 2> {log} "
 
-# # Run strobealign to get the abundances
-# rulename = "Strobealign_bam_default"
-# rule Strobealign_bam_default:
-#         input:
-#             fw = read_fw,
-#             rv = read_rv,
-#             contig = OUTDIR /"{key}/assembly_mapping_output/contigs.flt.fna.gz",
-#         output:
-#             OUTDIR / "{key}/assembly_mapping_output/mapped/{id}.bam"
-#         threads: threads_fn(rulename)
-#         resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-#         benchmark: config.get("benchmark", "benchmark/") + "{key}_{id}_" + rulename
-#         log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{id}_" + rulename
-#         conda: THIS_FILE_DIR / "envs/strobe_env.yaml"
-#         shell:
-#             """
-#             strobealign -t {threads} {input.contig} {input.fw} {input.rv} > {output} 2> {log}
-#             """
+# Run strobealign to get the abundances
+rulename = "Strobealign_bam_default"
+rule Strobealign_bam_default:
+        input:
+            fw = read_fw,
+            rv = read_rv,
+            contig = OUTDIR /"{key}/assembly_mapping_output/contigs.flt.fna.gz",
+        output:
+            OUTDIR / "{key}/assembly_mapping_output/mapped/{id}.bam"
+        threads: threads_fn(rulename)
+        resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+        benchmark: config.get("benchmark", "benchmark/") + "{key}_{id}_" + rulename
+        log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{id}_" + rulename
+        conda: THIS_FILE_DIR / "envs/strobe_env.yaml"
+        shell:
+            """
+            strobealign -t {threads} {input.contig} {input.fw} {input.rv} > {output} 2> {log}
+            """
 
-# # Sort the bam files and index them
-# rulename="sort"
-# rule sort:
-#     input:
-#         OUTDIR / "{key}/assembly_mapping_output/mapped/{id}.bam",
-#     output:
-#         OUTDIR / "{key}/assembly_mapping_output/mapped_sorted/{id}.bam.sort",
-#     threads: threads_fn(rulename)
-#     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-#     benchmark: config.get("benchmark", "benchmark/") + "{key}_{id}_" + rulename
-#     log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{id}_" + rulename
-#     shell:
-#         """
-#     samtools sort --threads {threads} {input} -o {output} 2> {log}
-#     samtools index {output} 2>> {log}
-#     """
+# Sort the bam files and index them
+rulename="sort"
+rule sort:
+    input:
+        OUTDIR / "{key}/assembly_mapping_output/mapped/{id}.bam",
+    output:
+        OUTDIR / "{key}/assembly_mapping_output/mapped_sorted/{id}.bam.sort",
+    threads: threads_fn(rulename)
+    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+    benchmark: config.get("benchmark", "benchmark/") + "{key}_{id}_" + rulename
+    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{id}_" + rulename
+    shell:
+        """
+    samtools sort --threads {threads} {input} -o {output} 2> {log}
+    samtools index {output} 2>> {log}
+    """
 
 ## The next part of the pipeline is composed of the following steps:
 # 0. Look for contigs circularizable
@@ -312,28 +323,6 @@ rule all:
 #     shell:
 #         """
 #         python {params.path} --dir_bams {params.dir_bams} --outcls {output[0]} --max_insert {MAX_INSERT_SIZE_CIRC} &> {log}
-#         touch {output[1]}
-#         """
-
-# # 1. Align contigs all against all
-# rulename = "align_contigs"
-# rule align_contigs:
-#     input:
-#         OUTDIR / "{key}/assembly_mapping_output/contigs.flt.fna.gz",
-#     output:
-#         os.path.join(OUTDIR,"{key}",'blastn','blastn_all_against_all.txt'),
-#         os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/align_contigs.finished'),
-#     params:
-#         db_name=os.path.join(OUTDIR, "{key}",'blastn','contigs.db'), # TODO should be made?
-#     threads: threads_fn(rulename)
-#     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-#     benchmark: config.get("benchmark", "benchmark/") + "{key}_" + rulename
-#     log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
-#     shell:
-#         """
-#         gunzip -c {input} |makeblastdb -in - -dbtype nucl -out {params.db_name} -title contigs.db 2> {log}
-#         gunzip -c {input} |blastn -query - -db {params.db_name} -out {output[0]}.redundant -outfmt 6 -perc_identity 95 -num_threads {threads} -max_hsps 1000000 2>> {log}
-#         awk '$1 != $2 && $4 >= 500' {output[0]}.redundant > {output[0]} 2>> {log}
 #         touch {output[1]}
 #         """
 
