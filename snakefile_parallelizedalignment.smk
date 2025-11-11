@@ -113,7 +113,7 @@ read_rv =  lambda wildcards: sample_id_path[wildcards.key][wildcards.id][1]
 
 ##
 print(sample_id["intermidiate_files"])
-SAMPLE_PAIRS = [(a, b) for a, b in itertools.combinations([sample_id["intermidiate_files"]], 2)]
+SAMPLE_PAIRS = [(a, b) for a, b in itertools.combinations(sample_id["intermidiate_files"], 2)]
 print(SAMPLE_PAIRS)
 
 # Functions to get the config-defined threads/walltime/mem_gb for a rule and if not defined the default
