@@ -333,9 +333,8 @@ rule makeblastdbs:
         #OUTDIR / "{key}/assembly_mapping_output/contigs.flt.fna.gz",
         OUTDIR / "{key}/assembly_mapping_output/spades_{sampleB}/contigs.flt.fna.gz"
     output:
-        
         os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/sample_pairwise/makeblastdbs_{sampleB}.finished')
-    params: os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','contigs_{sampleB}.db'), # TODO should be made?
+    params: os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','contigs_{sampleB}.db') # TODO should be made?
     threads: threads_fn("makeblastdbs")
     resources: walltime = walltime_fn("makeblastdbs"), mem_gb = mem_gb_fn("makeblastdbs")
     benchmark: config.get("benchmark", "benchmark/") + "{key}_{sampleB}" + rulename
@@ -371,7 +370,7 @@ rule align_contigs_per_sample:
     output:
         os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','blast_{sampleA}_{sampleB}.txt'),
         os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/align_contigs_{sampleA}_{sampleB}.finished')
-    params: os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','contigs_{sampleB}.db'),
+    params: os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','contigs_{sampleB}.db')
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
     benchmark: config.get("benchmark", "benchmark/") + "{key}_{sampleA}_{sampleB}_" + rulename
