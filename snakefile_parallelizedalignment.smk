@@ -390,7 +390,7 @@ rule align_all_samples:
                sampleB=[b for a, b in SAMPLE_PAIRS],
                key=sample_id.keys()),
         lambda wildcards: expand(
-            os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/align_contigs_{sampleA}_{sampleB}.finished'),
+            os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/sample_pairwise/align_contigs_{sampleA}_{sampleB}.finished'),
                sampleA=[a for a, b in SAMPLE_PAIRS],
                sampleB=[b for a, b in SAMPLE_PAIRS],key=sample_id.keys())
     output:
