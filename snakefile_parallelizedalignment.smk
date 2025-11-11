@@ -113,7 +113,7 @@ read_rv =  lambda wildcards: sample_id_path[wildcards.key][wildcards.id][1]
 
 ##
 SAMPLE_PAIRS = [(a, b) for a, b in itertools.combinations([sample_id.keys()], 2)]
-
+print(SAMPLE_PAIRS)
 
 # Functions to get the config-defined threads/walltime/mem_gb for a rule and if not defined the default
 threads_fn = lambda rulename: config.get(rulename, {"threads": default_threads}).get("threads", default_threads)
@@ -396,7 +396,8 @@ rule align_all_samples:
     input:
         lambda wildcards:  expand(os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','blast_{sampleA}_{sampleB}.txt'),
                sampleA=[a for a, b in SAMPLE_PAIRS],
-               sampleB=[b for a, b in SAMPLE_PAIRS],key=sample_id.keys()),
+               sampleB=[b for a, b in SAMPLE_PAIRS],
+               key=sample_id.keys()),
         lambda wildcards: expand(
             os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/align_contigs_{sampleA}_{sampleB}.finished'),
                sampleA=[a for a, b in SAMPLE_PAIRS],
