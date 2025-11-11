@@ -334,7 +334,7 @@ rule makeblastdbs:
         OUTDIR / "{key}/assembly_mapping_output/spades_{sampleB}/contigs.flt.fna.gz"
     output:
         os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','contigs_{sampleB}.db'), # TODO should be made?
-        os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/makeblastdbs_{sampleB}.finished')
+        os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/sample_pairwise/makeblastdbs_{sampleB}.finished')
     threads: threads_fn("makeblastdbs")
     resources: walltime = walltime_fn("makeblastdbs"), mem_gb = mem_gb_fn("makeblastdbs")
     benchmark: config.get("benchmark", "benchmark/") + "{key}_{sampleB}" + rulename
@@ -348,7 +348,7 @@ rule makeblastdbs:
 rulename = "makeblastdbs_all_samples"
 rule makeblastdbs_all_samples:
     input:
-        lambda wildcards: expand(os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/makeblastdbs_{sampleB}.finished'),
+        lambda wildcards: expand(os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/sample_pairwise/makeblastdbs_{sampleB}.finished'),
                sampleB=set([b for a, b in SAMPLE_PAIRS]),key=sample_id.keys()
                ),
     output:
