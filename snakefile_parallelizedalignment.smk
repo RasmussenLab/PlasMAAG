@@ -186,13 +186,14 @@ else:
 rulename = "spades"
 rule spades:
     input:
-       fw = lambda wildcards: sample_id_path["intermidiate_files"][wildcards.id][0], #read_fw,
-       rv = lambda wildcards: sample_id_path["intermidiate_files"][wildcards.id][1], #read_rv,
+       fw = read_fw,
+       rv = read_rv,
     output:
        #outdir = directory(OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}"),
        outfile = OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}/contigs.fasta",
        graph = OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}/assembly_graph_after_simplification.gfa",
        graphinfo  = OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}/contigs.paths",
+    params: outdir = directory(OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}")
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
     benchmark: config.get("benchmark", "benchmark/") + "intermidate_files_{id}_" + rulename
@@ -201,7 +202,7 @@ rule spades:
     shell:
        "spades.py --meta "
        "-t {threads} -m 180 "
-       "-o {output.outdir} -1 {input.fw} -2 {input.rv} "
+       "-o {params.outdir} -1 {input.fw} -2 {input.rv} "
        "-t {threads} --memory {resources.mem_gb} &> {log} "
 
 # Rename the contigs to keep sample information for later use
