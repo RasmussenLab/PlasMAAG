@@ -138,23 +138,23 @@ rule all:
         os.path.join(OUTDIR,"intermidate_files", 'rule_completed_checks','create_assembly_alignment_graph.finished')
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    output:
-        candidate_plasmids = OUTDIR / "results/candidate_plasmids.tsv",
-        candidate_genomes = OUTDIR / "results/candidate_genomes.tsv",
-        combined_scores = OUTDIR / "results/scores.tsv",
-        results_dir = directory(OUTDIR / "results/")
-    params:
-        path = os.path.join(SRC_DIR, 'write_candidate_bins.py'),
+    # output:
+    #     candidate_plasmids = OUTDIR / "results/candidate_plasmids.tsv",
+    #     candidate_genomes = OUTDIR / "results/candidate_genomes.tsv",
+    #     combined_scores = OUTDIR / "results/scores.tsv",
+    #     results_dir = directory(OUTDIR / "results/")
+    # params:
+    #     path = os.path.join(SRC_DIR, 'write_candidate_bins.py'),
 
-    shell:
-        """
-        cat {input.candidate_plasmids} > {output.candidate_plasmids}
-        cat {input.candidate_genomes} > {output.candidate_genomes}
-        # Remove header from one of the files
-        tail -n+2  {input.candidate_genomes_scores} | cat {input.candidate_plasmids_scores} - > {output.combined_scores}
-        # Write bins from cluster candidates
-        python {params.path} --cls_pl {output.candidate_plasmids} --cls_nonpl {output.candidate_genomes} --contigs {input.contigs} --outdir {output.results_dir}
-        """
+    # shell:
+    #     """
+    #     cat {input.candidate_plasmids} > {output.candidate_plasmids}
+    #     cat {input.candidate_genomes} > {output.candidate_genomes}
+    #     # Remove header from one of the files
+    #     tail -n+2  {input.candidate_genomes_scores} | cat {input.candidate_plasmids_scores} - > {output.combined_scores}
+    #     # Write bins from cluster candidates
+    #     python {params.path} --cls_pl {output.candidate_plasmids} --cls_nonpl {output.candidate_genomes} --contigs {input.contigs} --outdir {output.results_dir}
+    #     """
 
 #If the genomad database is given as an argument don't download it again
 #This works boths from when the tool is called from the CLI wrapper and from snakemake if the config is extended setting the genomad_database variable
