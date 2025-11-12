@@ -139,7 +139,7 @@ rule all:
         #expand(os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks/blastn/align_contigs.finished'),key=sample_id.keys())
         #os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks','blastn','makeblastdbs_all_samples.finished')
         expand(os.path.join(
-            OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}/contigs.flt.fna.gz"), id=["sample0"])
+            OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}/contigs.renamed.fasta"), id=["sample0"])
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
     # output:
