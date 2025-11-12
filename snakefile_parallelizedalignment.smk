@@ -472,7 +472,7 @@ rule weighted_alignment_graph:
 rulename = "create_assembly_alignment_graph"
 rule create_assembly_alignment_graph:
     input:
-        assembly_graph_files = expand(os.path.join(OUTDIR,"intermidate_files",'assembly_graphs','{id}.pkl'), id=sample_id["intermidate_files"]),
+        assembly_graph_files = expand(os.path.join(OUTDIR,"intermidate_files",'assembly_graphs','{id}.pkl'), id=['sample0', 'sample1', 'sample2']),#sample_id["intermidate_files"]),
         alignment_graph_file = os.path.join(OUTDIR,"intermidate_files",'alignment_graph','alignment_graph.pkl'),
         weighted_alignment_graph_finished_log = os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks','alignment_graph_processing','weighted_alignment_graph.finished'),
         weighted_assembly_graphs_all_samples_finished_log = expand(os.path.join(OUTDIR,"intermidate_files", 'rule_completed_checks','assembly_graph_processing','weighted_assembly_graphs_{id}.finished'), id=sample_id["intermidate_files"])
