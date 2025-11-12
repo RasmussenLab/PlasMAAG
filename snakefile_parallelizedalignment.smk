@@ -138,7 +138,8 @@ rule all:
         # contigs = expand(os.path.join(OUTDIR,"intermidate_files",'assembly_mapping_output','contigs.flt.fna.gz'), key=sample_id.keys())
         #expand(os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks/blastn/align_contigs.finished'),key=sample_id.keys())
         #os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks','blastn','makeblastdbs_all_samples.finished')
-        OUTDIR / "intermidate_files/assembly_mapping_output/spades_sample0/contigs.renamed.fasta"
+        expand(os.path.join(
+            OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}/contigs.renamed.fasta"), id=["sample0"])
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
     # output:
@@ -218,17 +219,17 @@ rule rename_contigs:
         """
         sed 's/^>/>S{wildcards.id}C/' {input} > {output} 2> {log}
         """
-rulename = "filter_sample_contigs"
-rule filter_sample_contigs:
-    input: OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}/contigs.renamed.fasta",
-    output: OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}/contigs.flt.fna.gz"
-    threads: threads_fn(rulename)
-    params: script =  SRC_DIR / "concatenate.py"
-    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidate_files_{id}_" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidate_files_{id}_" + rulename
-    shell:
-        "python {params.script} {output} {input} --keepnames -m {MIN_CONTIG_LEN} &> {log} "
+# rulename = "filter_sample_contigs"
+# rule filter_sample_contigs:
+#     input: OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}/contigs.renamed.fasta",
+#     output: OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}/contigs.flt.fna.gz"
+#     threads: threads_fn(rulename)
+#     params: script =  SRC_DIR / "concatenate.py"
+#     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+#     benchmark: config.get("benchmark", "benchmark/") + "intermidate_files_{id}_" + rulename
+#     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidate_files_{id}_" + rulename
+#     shell:
+#         "python {params.script} {output} {input} --keepnames -m {MIN_CONTIG_LEN} &> {log} "
 
 
 #######################
