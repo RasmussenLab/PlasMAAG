@@ -111,12 +111,8 @@ if config.get("read_assembly_dir") != None:
 read_fw = lambda wildcards: sample_id_path["intermidiate_files"][wildcards.id][0]
 read_rv =  lambda wildcards: sample_id_path["intermidiate_files"][wildcards.id][1]
 
-##
-print(contigs)
-print(sample_id["intermidiate_files"])
-
+## Deinfe pairs for paralel alignment 
 SAMPLE_PAIRS = [(a, b) for a, b in itertools.combinations(sample_id["intermidiate_files"], 2)]
-print(SAMPLE_PAIRS)
 
 # Functions to get the config-defined threads/walltime/mem_gb for a rule and if not defined the default
 threads_fn = lambda rulename: config.get(rulename, {"threads": default_threads}).get("threads", default_threads)
@@ -233,7 +229,102 @@ rule filter_sample_contigs:
         "python {params.script} {output} {input} --keepnames -m {MIN_CONTIG_LEN} &> {log} "
 
 
-#######################
+# Cat the contigs together in one file to later map each pair of reads against all the contigs together
+rulename="cat_contigs"
+rule cat_contigs:
+    input: lambda wildcards: expand(OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}/contigs.renamed.fasta", id=sample_id["intermidate_files"]),
+    output: OUTDIR / "intermidate_files/assembly_mapping_output/contigs.flt.fna.gz"
+    threads: threads_fn(rulename)
+    params: script =  SRC_DIR / "concatenate.py"
+    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+    benchmark: config.get("benchmark", "benchmark/") + "intermidate_files" + rulename
+    log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidate_files_" + rulename
+    shell:
+        "python {params.script} {output} {input} --keepnames -m {MIN_CONTIG_LEN} &> {log} "
+
+# Extract the contigs names for later use
+rulename = "get_contig_names"
+rule get_contig_names:
+    input:
+        OUTDIR / "intermidate_files/assembly_mapping_output/contigs.flt.fna.gz"
+    output:
+        OUTDIR / "intermidate_files/assembly_mapping_output/contigs.names.sorted"
+    threads: threads_fn(rulename)
+    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+    benchmark: config.get("benchmark", "benchmark/") + "intermidate_files_" + rulename
+    log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidate_files_" + rulename
+    shell:
+        "zcat {input} | grep '>' | sed 's/>//' > {output} 2> {log} "
+
+# Run strobealign to get the abundances
+rulename = "Strobealign_bam_default"
+rule Strobealign_bam_default:
+        input:
+            fw = read_fw,
+            rv = read_rv,
+            contig = OUTDIR /"intermidate_files/assembly_mapping_output/contigs.flt.fna.gz",
+        output:
+            OUTDIR / "intermidate_files/assembly_mapping_output/mapped/{id}.bam"
+        threads: threads_fn(rulename)
+        resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+        benchmark: config.get("benchmark", "benchmark/") + "intermidate_files_{id}_" + rulename
+        log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidate_files_{id}_" + rulename
+        conda: THIS_FILE_DIR / "envs/strobe_env.yaml"
+        shell:
+            """
+            strobealign -t {threads} {input.contig} {input.fw} {input.rv} > {output} 2> {log}
+            """
+
+# Sort the bam files and index them
+rulename="sort"
+rule sort:
+    input:
+        OUTDIR / "intermidate_files/assembly_mapping_output/mapped/{id}.bam",
+    output:
+        OUTDIR / "intermidate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort",
+    threads: threads_fn(rulename)
+    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+    benchmark: config.get("benchmark", "benchmark/") + "intermidate_files_{id}_" + rulename
+    log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidate_files_{id}_" + rulename
+    shell:
+        """
+    samtools sort --threads {threads} {input} -o {output} 2> {log}
+    samtools index {output} 2>> {log}
+    """
+
+## The next part of the pipeline is composed of the following steps:
+# 0. Look for contigs circularizable
+# 1. Align contigs all against all
+# 2. Generate per sample assembly graphs from gfa assembly graphs
+# 3. Generate alignment graph from 1. output
+# 4. Produce assembly-alignment graph from merging assembly graph and alignment graph.
+# 5. Run n2v on the per sample assembly graphs
+# 6. Extract neighbourhoods from assembly-alignment graph n2v embeddings
+# 7. Run vamb to merge,split, and expand the hoods
+# 8. Merge graph clusters with circular clusters
+# 9. Run geNomad to get contig plasmid, chromosome, and virus classificaiton scores
+# 10. Classify bins/clusters into plasmid/organism/virus bins/clusters
+
+# 0. Look for contigs circularizable
+rulename = "circularize"
+rule circularize:
+    input:
+        bamfiles = lambda wildcards: expand(OUTDIR /  "intermidate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort", id=sample_id["intermidate_files"]),
+    output:
+        os.path.join(OUTDIR,"intermidate_files",'circularisation','max_insert_len_%i_circular_clusters.tsv.txt'%MAX_INSERT_SIZE_CIRC),
+        os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks/circularisation/circularisation.finished')
+    params:
+        path = os.path.join(SRC_DIR, 'circularisation.py'),
+        dir_bams = OUTDIR / "intermidate_files/assembly_mapping_output/mapped_sorted"
+    threads: threads_fn(rulename),
+    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+    benchmark: config.get("benchmark", "benchmark/") + "intermidate_files_" + rulename
+    log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidate_files_" + rulename
+    shell:
+        """
+        python {params.path} --dir_bams {params.dir_bams} --outcls {output[0]} --max_insert {MAX_INSERT_SIZE_CIRC} &> {log}
+        touch {output[1]}
+        """
 
 
 # 1. Align contigs pairwise
