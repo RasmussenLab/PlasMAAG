@@ -434,7 +434,7 @@ rule weighted_assembly_graphs:
 
 rulename = "weighted_assembly_graphs_all_samples"
 rule weighted_assembly_graphs_all_samples:
-    input: lambda wildcards: expand(os.path.join(OUTDIR,"intermidate_files",'assembly_graphs','{id}.pkl') id=sample_id["intermidate_files"]),
+    input: lambda wildcards: expand(os.path.join(OUTDIR,"intermidate_files",'assembly_graphs','{id}.pkl'), id=sample_id["intermidate_files"]),
     output:
         os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks','assembly_graph_processing','weighted_assembly_graphs_all_samples.finished')
     threads: threads_fn(rulename)
