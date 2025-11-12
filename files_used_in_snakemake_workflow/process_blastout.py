@@ -29,7 +29,7 @@ def graph_from_blastout(
         Check if alignment is consistent with both contigs belonging to the same original genome
         """
 
-        if q_s > s_s and s_e < (c_q_len - q_s) or s_s > q_s and q_e < (c_s_len - s_s):
+        if (q_s > s_s and s_e < (c_q_len - q_s)) or (s_s > q_s and q_e < (c_s_len - s_s)):
             return False
 
         else:
@@ -80,6 +80,11 @@ def graph_from_blastout(
 
         if alig_len >= min_al and identity >= min_id:
             ci_s, ci_e, cj_s, cj_e = [int(p) for p in blast_row[6:10]]
+            if ci_s > ci_e:
+                ci_s, ci_e = ci_e, ci_s
+            if cj_s > cj_e:
+                cj_s, cj_e = cj_e, cj_s
+
             valid_al = valid_alignment(
                 contig_len(ci), contig_len(cj), ci_s, ci_e, cj_s, cj_e
             )
