@@ -191,7 +191,7 @@ rule spades:
     params: outdir = directory(OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}")
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_{id}_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename
     conda: THIS_FILE_DIR / "envs/spades_env.yaml"
     shell:
@@ -209,7 +209,7 @@ rule rename_contigs:
         OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}/contigs.renamed.fasta"
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_{id}_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename
     shell:
         """
@@ -222,7 +222,7 @@ rule filter_sample_contigs:
     threads: threads_fn(rulename)
     params: script =  SRC_DIR / "concatenate.py"
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_{id}_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename
     shell:
         "python {params.script} {output} {input} --keepnames -m {MIN_CONTIG_LEN} &> {log} "
@@ -236,7 +236,7 @@ rule cat_contigs:
     threads: threads_fn(rulename)
     params: script =  SRC_DIR / "concatenate.py"
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename
     shell:
         "python {params.script} {output} {input} --keepnames -m {MIN_CONTIG_LEN} &> {log} "
@@ -250,7 +250,7 @@ rule get_contig_names:
         OUTDIR / "intermidiate_files/assembly_mapping_output/contigs.names.sorted"
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename
     shell:
         "zcat {input} | grep '>' | sed 's/>//' > {output} 2> {log} "
@@ -266,7 +266,7 @@ rule Strobealign_bam_default:
             OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam"
         threads: threads_fn(rulename)
         resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-        benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_{id}_" + rulename
+        benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
         log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename
         conda: THIS_FILE_DIR / "envs/strobe_env.yaml"
         shell:
@@ -283,7 +283,7 @@ rule sort:
         OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort",
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_{id}_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename
     shell:
         """
@@ -317,7 +317,7 @@ rule circularize:
         dir_bams = OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted"
     threads: threads_fn(rulename),
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename
     shell:
         """
@@ -337,7 +337,7 @@ rule makeblastdbs:
     params: os.path.join(OUTDIR, "intermidiate_files",'blastn','sample_pairwise','contigs_{sampleB}.db') # TODO should be made?
     threads: threads_fn("makeblastdbs")
     resources: walltime = walltime_fn("makeblastdbs"), mem_gb = mem_gb_fn("makeblastdbs")
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_{sampleB}" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{sampleB}" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{sampleB}" + rulename
     shell:
         """
@@ -355,7 +355,7 @@ rule makeblastdbs_all_samples:
         os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','blastn','makeblastdbs_all_samples.finished')
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename
     shell:
         """
@@ -373,7 +373,7 @@ rule align_contigs_per_sample:
     params: os.path.join(OUTDIR, "intermidiate_files",'blastn','sample_pairwise','contigs_{sampleB}.db')
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_{sampleA}_{sampleB}_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{sampleA}_{sampleB}_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{sampleA}_{sampleB}_" + rulename
     shell:
         """
@@ -402,7 +402,7 @@ rule align_all_samples:
         os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/align_contigs.finished')
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename
     shell:
         """
@@ -423,7 +423,7 @@ rule weighted_assembly_graphs:
         path = os.path.join(SRC_DIR, 'process_gfa.py'),
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_{id}_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename
     shell:
         """
@@ -444,7 +444,7 @@ rule weighted_alignment_graph:
         path = os.path.join(SRC_DIR, 'process_blastout.py'),
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename
     shell:
         """
@@ -467,7 +467,7 @@ rule create_assembly_alignment_graph:
         path = os.path.join(SRC_DIR, 'merge_assembly_alignment_graphs.py'),
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename
     shell:
         """
@@ -491,7 +491,7 @@ rule n2v_assembly_alignment_graph:
         path = os.path.join(SRC_DIR, 'fastnode2vec_args.py'),
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename
     conda: THIS_FILE_DIR / "envs/node2vec.yaml"
     shell:
@@ -518,7 +518,7 @@ rule extract_neighs_from_n2v_embeddings:
         path = os.path.join(SRC_DIR, 'embeddings_to_neighs.py'),
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename
     shell:
         """
@@ -545,7 +545,7 @@ rule run_contrastive_VAE:
         cuda='--cuda' if CUDA else ''
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename
     shell:
         """
@@ -573,7 +573,7 @@ rule merge_circular_with_graph_clusters:
         path=os.path.join(SRC_DIR, 'merge_circular_plamb_clusters.py'),
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename
     shell:
         """
@@ -592,7 +592,7 @@ rule run_geNomad:
         os.path.join(OUTDIR,"intermidiate_files",'geNomad','contigs.flt_aggregated_classification','contigs.flt_aggregated_classification.tsv')
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename
     conda: THIS_FILE_DIR / "envs/genomad.yaml"
     shell:
@@ -622,7 +622,7 @@ rule classify_bins_with_geNomad:
         path = os.path.join(SRC_DIR, 'classify_bins_with_geNomad.py'),
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidiate_files_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename
     shell:
         """
