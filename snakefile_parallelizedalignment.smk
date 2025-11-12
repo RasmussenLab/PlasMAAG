@@ -642,7 +642,7 @@ rule classify_bins_with_geNomad:
     shell:
         """
         python {params.path} --clusters {input.comm_clusters} \
-         --dflt_cls {OUTDIR}/{"intermidate_files"}/contrastive_VAE/vae_clusters_density_unsplit.tsv --scores {input[0]} --outp {output[0]} \
+         --dflt_cls {OUTDIR}/intermidate_files/contrastive_VAE/vae_clusters_density_unsplit.tsv --scores {input[0]} --outp {output[0]} \
          --composition {input.composition} --thr {GENOMAD_THR} --thr_circ {GENOMAD_THR_CIRC} &> {log}
         touch {output[1]}
         """
