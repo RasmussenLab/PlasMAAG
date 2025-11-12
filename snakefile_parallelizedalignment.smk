@@ -399,7 +399,7 @@ rule align_all_samples:
             sampleB=[b for a, b in SAMPLE_PAIRS]
             )
     output:
-        os.path.join(OUTDIR,"intermidate_files",'blastn','blastn_against_all.txt'),
+        os.path.join(OUTDIR,"intermidate_files",'blastn','blastn_all_against_all.txt'),
         os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks/blastn/align_contigs.finished')
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
