@@ -385,14 +385,20 @@ rule align_contigs_per_sample:
 rulename = "align_all_samples"
 rule align_all_samples:
     input:
-        lambda wildcards:  expand(os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','blast_{sampleA}_{sampleB}.txt'),
-               sampleA=[a for a, b in SAMPLE_PAIRS],
-               sampleB=[b for a, b in SAMPLE_PAIRS],
-               key=sample_id.keys()),
+        lambda wildcards: expand(
+            os.path.join(OUTDIR, "{key}",'blastn','sample_pairwise','blast_{sampleA}_{sampleB}.txt'),
+            zip,
+            sampleA=[a for a, b in SAMPLE_PAIRS],
+            sampleB=[b for a, b in SAMPLE_PAIRS],
+            key=sample_id.keys()
+            ),
         lambda wildcards: expand(
             os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/sample_pairwise/align_contigs_{sampleA}_{sampleB}.finished'),
-               sampleA=[a for a, b in SAMPLE_PAIRS],
-               sampleB=[b for a, b in SAMPLE_PAIRS],key=sample_id.keys())
+            zip,
+            sampleA=[a for a, b in SAMPLE_PAIRS],
+            sampleB=[b for a, b in SAMPLE_PAIRS],
+            key=sample_id.keys()
+            )
     output:
         os.path.join(OUTDIR,"{key}",'blastn','blastn_against_all.txt'),
         os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/align_contigs.finished')
