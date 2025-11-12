@@ -128,13 +128,14 @@ except FileExistsError:
 rulename = "all"
 rule all:
     input:
-        candidate_plasmids = expand(os.path.join(OUTDIR,"intermidate_files",'contrastive_VAE','vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids.tsv'),key=sample_id.keys()),
-        candidate_genomes = expand(os.path.join(OUTDIR,"intermidate_files",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '.tsv'),key=sample_id.keys()), #
-        assert_genomad_finished = expand(os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks/run_geNomad.finished'), key=sample_id.keys()),
-        assert_vamb_finished = expand(os.path.join(OUTDIR, "intermidate_files",'rule_completed_checks/run_contrastive_VAE.finished'), key=sample_id.keys()),
-        candidate_genomes_scores =expand(os.path.join(OUTDIR,"intermidate_files",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_gN_scores.tsv'), key=sample_id.keys()),
-        candidate_plasmids_scores = expand(os.path.join(OUTDIR,"intermidate_files",'contrastive_VAE',f'vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids_gN_scores.tsv'), key=sample_id.keys()),
-        contigs = expand(os.path.join(OUTDIR,"intermidate_files",'assembly_mapping_output','contigs.flt.fna.gz'), key=sample_id.keys())
+        #candidate_plasmids = expand(os.path.join(OUTDIR,"intermidate_files",'contrastive_VAE','vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids.tsv'),key=sample_id.keys()),
+        #candidate_genomes = expand(os.path.join(OUTDIR,"intermidate_files",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '.tsv'),key=sample_id.keys()), #
+        #assert_genomad_finished = expand(os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks/run_geNomad.finished'), key=sample_id.keys()),
+        #assert_vamb_finished = expand(os.path.join(OUTDIR, "intermidate_files",'rule_completed_checks/run_contrastive_VAE.finished'), key=sample_id.keys()),
+        #candidate_genomes_scores =expand(os.path.join(OUTDIR,"intermidate_files",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_gN_scores.tsv'), key=sample_id.keys()),
+        #candidate_plasmids_scores = expand(os.path.join(OUTDIR,"intermidate_files",'contrastive_VAE',f'vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids_gN_scores.tsv'), key=sample_id.keys()),
+        #contigs = expand(os.path.join(OUTDIR,"intermidate_files",'assembly_mapping_output','contigs.flt.fna.gz'), key=sample_id.keys())
+        os.path.join(OUTDIR,"intermidate_files", 'rule_completed_checks','create_assembly_alignment_graph.finished')
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
     output:
