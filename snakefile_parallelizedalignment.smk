@@ -219,7 +219,7 @@ rule rename_contigs:
         """
 rulename = "filter_sample_contigs"
 rule filter_sample_contigs:
-    input: lambda wildcards: expand(OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}/contigs.renamed.fasta", id=sample_id["intermidate_files"]),
+    input: lambda wildcards: expand(OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}/contigs.renamed.fasta")#, id=sample_id["intermidate_files"]),
     output: OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}/contigs.flt.fna.gz"
     threads: threads_fn(rulename)
     params: script =  SRC_DIR / "concatenate.py"
@@ -385,13 +385,13 @@ rule align_contigs_per_sample:
 rulename = "align_all_samples"
 rule align_all_samples:
     input:
-        lambda wildcards: expand(
+        blast_outputs_per_sample=lambda wildcards: expand(
             os.path.join(OUTDIR, "intermidate_files",'blastn','sample_pairwise','blast_{sampleA}_{sampleB}.txt'),
             zip,
             sampleA=[a for a, b in SAMPLE_PAIRS],
             sampleB=[b for a, b in SAMPLE_PAIRS]
             ),
-        lambda wildcards: expand(
+        blast_fins_per_sample=lambda wildcards: expand(
             os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks/blastn/sample_pairwise/align_contigs_{sampleA}_{sampleB}.finished'),
             zip,
             sampleA=[a for a, b in SAMPLE_PAIRS],
@@ -406,7 +406,7 @@ rule align_all_samples:
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidate_files_" + rulename
     shell:
         """
-        cat {input[0]} >> {output[0]} 2> {log}
+        cat {input.blast_outputs_per_sample} >> {output[0]} 2> {log}
         touch {output[1]}
         """
 
