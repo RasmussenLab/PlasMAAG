@@ -186,8 +186,8 @@ else:
 rulename = "spades"
 rule spades:
     input:
-       fw = read_fw,
-       rv = read_rv,
+       fw = lambda wildcards: sample_id_path["intermidiate_files"][wildcards.id][0], #read_fw,
+       rv = lambda wildcards: sample_id_path["intermidiate_files"][wildcards.id][1], #read_rv,
     output:
        outdir = directory(OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}"),
        outfile = OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}/contigs.fasta",
