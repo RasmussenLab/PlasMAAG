@@ -208,7 +208,8 @@ rule spades:
 rulename = "rename_contigs"
 rule rename_contigs:
     input:
-        contigs,
+        OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}/contigs.fasta"
+        #contigs,
     output:
         OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}/contigs.renamed.fasta"
     threads: threads_fn(rulename)
