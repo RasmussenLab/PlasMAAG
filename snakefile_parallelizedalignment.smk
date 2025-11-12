@@ -137,7 +137,8 @@ rule all:
         # candidate_plasmids_scores = expand(os.path.join(OUTDIR,"intermidate_files",'contrastive_VAE',f'vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids_gN_scores.tsv'), key=sample_id.keys()),
         # contigs = expand(os.path.join(OUTDIR,"intermidate_files",'assembly_mapping_output','contigs.flt.fna.gz'), key=sample_id.keys())
         #expand(os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks/blastn/align_contigs.finished'),key=sample_id.keys())
-        os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks','blastn','makeblastdbs_all_samples.finished')
+        #os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks','blastn','makeblastdbs_all_samples.finished')
+        expand(OUTDIR / "intermidate_files/assembly_mapping_output/spades_{id}/contigs.flt.fna.gz", id=sample_id["intermidate_files"])
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
     # output:
@@ -233,41 +234,41 @@ rule filter_sample_contigs:
 #######################
 
 
-# 1. Align contigs pairwise
-rulename = "makeblastdbs"
-rule makeblastdbs:
-    input:
-        #OUTDIR / "intermidate_files/assembly_mapping_output/contigs.flt.fna.gz",
-        OUTDIR / "intermidate_files/assembly_mapping_output/spades_{sampleB}/contigs.flt.fna.gz"
-    output:
-        os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks/blastn/sample_pairwise/makeblastdbs_{sampleB}.finished')
-    params: os.path.join(OUTDIR, "intermidate_files",'blastn','sample_pairwise','contigs_{sampleB}.db') # TODO should be made?
-    threads: threads_fn("makeblastdbs")
-    resources: walltime = walltime_fn("makeblastdbs"), mem_gb = mem_gb_fn("makeblastdbs")
-    benchmark: config.get("benchmark", "benchmark/") + "intermidate_files_{sampleB}" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidate_files_{sampleB}" + rulename
-    shell:
-        """
-        gunzip -c {input} |makeblastdb -in - -dbtype nucl -out {params} -title contigs_{wildcards.sampleB}.db 2> {log}
-        touch {output}
-        """
+# # 1. Align contigs pairwise
+# rulename = "makeblastdbs"
+# rule makeblastdbs:
+#     input:
+#         #OUTDIR / "intermidate_files/assembly_mapping_output/contigs.flt.fna.gz",
+#         OUTDIR / "intermidate_files/assembly_mapping_output/spades_{sampleB}/contigs.flt.fna.gz"
+#     output:
+#         os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks/blastn/sample_pairwise/makeblastdbs_{sampleB}.finished')
+#     params: os.path.join(OUTDIR, "intermidate_files",'blastn','sample_pairwise','contigs_{sampleB}.db') # TODO should be made?
+#     threads: threads_fn("makeblastdbs")
+#     resources: walltime = walltime_fn("makeblastdbs"), mem_gb = mem_gb_fn("makeblastdbs")
+#     benchmark: config.get("benchmark", "benchmark/") + "intermidate_files_{sampleB}" + rulename
+#     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidate_files_{sampleB}" + rulename
+#     shell:
+#         """
+#         gunzip -c {input} |makeblastdb -in - -dbtype nucl -out {params} -title contigs_{wildcards.sampleB}.db 2> {log}
+#         touch {output}
+#         """
 
-rulename = "makeblastdbs_all_samples"
-rule makeblastdbs_all_samples:
-    input:
-        lambda wildcards: expand(os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks/blastn/sample_pairwise/makeblastdbs_{sampleB}.finished'),
-               sampleB=set([b for a, b in SAMPLE_PAIRS])
-               ),
-    output:
-        os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks','blastn','makeblastdbs_all_samples.finished')
-    threads: threads_fn(rulename)
-    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "intermidate_files_" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidate_files_" + rulename
-    shell:
-        """
-        touch {output}
-        """
+# rulename = "makeblastdbs_all_samples"
+# rule makeblastdbs_all_samples:
+#     input:
+#         lambda wildcards: expand(os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks/blastn/sample_pairwise/makeblastdbs_{sampleB}.finished'),
+#                sampleB=set([b for a, b in SAMPLE_PAIRS])
+#                ),
+#     output:
+#         os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks','blastn','makeblastdbs_all_samples.finished')
+#     threads: threads_fn(rulename)
+#     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+#     benchmark: config.get("benchmark", "benchmark/") + "intermidate_files_" + rulename
+#     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidate_files_" + rulename
+#     shell:
+#         """
+#         touch {output}
+#         """
 
 # rulename = "align_contigs_per_sample"
 # rule align_contigs_per_sample:
