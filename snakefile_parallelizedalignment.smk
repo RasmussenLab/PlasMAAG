@@ -112,6 +112,7 @@ read_fw = lambda wildcards: sample_id_path["intermidiate_files"][wildcards.id][0
 read_rv =  lambda wildcards: sample_id_path["intermidiate_files"][wildcards.id][1]
 
 ## Deinfe pairs for paralel alignment 
+print(sample_id["intermidiate_files"])
 SAMPLE_PAIRS = [(a, b) for a, b in itertools.combinations(sample_id["intermidiate_files"], 2)]
 
 # Functions to get the config-defined threads/walltime/mem_gb for a rule and if not defined the default
@@ -470,7 +471,7 @@ rulename = "create_assembly_alignment_graph"
 rule create_assembly_alignment_graph:
     input:
         alignment_graph_file = os.path.join(OUTDIR,"intermidate_files",'alignment_graph','alignment_graph.pkl'),
-        assembly_graph_files = expand(os.path.join(OUTDIR,"intermidate_files",'assembly_graphs','{id}.pkl'), id=sample_id["intermidate_files"]),
+        assembly_graph_files = lambda wildcards: expand(os.path.join(OUTDIR,"intermidate_files",'assembly_graphs','{id}.pkl'), id=sample_id["intermidate_files"]),
         weighted_alignment_graph_finished_log = os.path.join(OUTDIR,"intermidate_files",'rule_completed_checks','alignment_graph_processing','weighted_alignment_graph.finished'),
         weighted_assembly_graphs_all_samples_finished_log = os.path.join(OUTDIR,"intermidate_files", 'rule_completed_checks','assembly_graph_processing','weighted_assembly_graphs_all_samples.finished')
     output:
