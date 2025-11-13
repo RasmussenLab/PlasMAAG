@@ -88,8 +88,8 @@ sort:
   mem_gb: 120
 
 align_contigs:
-  threads: 8
-  mem_gb: 120
+  threads: 4
+  mem_gb: 16
 
 run_geNomad:
   threads: 40
