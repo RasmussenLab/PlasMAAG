@@ -335,8 +335,8 @@ rule makeblastdbs:
     output:
         os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/sample_pairwise/makeblastdbs_{sampleB}.finished')
     params: os.path.join(OUTDIR, "intermidiate_files",'blastn','sample_pairwise','contigs_{sampleB}.db') # TODO should be made?
-    threads: threads_fn("makeblastdbs")
-    resources: walltime = walltime_fn("makeblastdbs"), mem_gb = mem_gb_fn("makeblastdbs")
+    threads: threads_fn("align_contigs")
+    resources: walltime = walltime_fn("align_contigs"), mem_gb = mem_gb_fn("align_contigs")
     benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{sampleB}" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{sampleB}" + rulename
     shell:
@@ -353,8 +353,8 @@ rule makeblastdbs_all_samples:
                ),
     output:
         os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','blastn','makeblastdbs_all_samples.finished')
-    threads: threads_fn(rulename)
-    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+    threads: threads_fn("align_contigs")
+    resources: walltime = walltime_fn("align_contigs"), mem_gb = mem_gb_fn("align_contigs")
     benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename
     shell:
@@ -371,8 +371,8 @@ rule align_contigs_per_sample:
         os.path.join(OUTDIR, "intermidiate_files",'blastn','sample_pairwise','blast_{sampleA}_{sampleB}.txt'),
         os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/sample_pairwise/align_contigs_{sampleA}_{sampleB}.finished')
     params: os.path.join(OUTDIR, "intermidiate_files",'blastn','sample_pairwise','contigs_{sampleB}.db')
-    threads: threads_fn(rulename)
-    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+    threads: threads_fn("align_contigs")
+    resources: walltime = walltime_fn("align_contigs"), mem_gb = mem_gb_fn("align_contigs")
     benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{sampleA}_{sampleB}_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{sampleA}_{sampleB}_" + rulename
     shell:
@@ -400,8 +400,8 @@ rule align_all_samples:
     output:
         os.path.join(OUTDIR,"intermidiate_files",'blastn','blastn_all_against_all.txt'),
         os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/align_contigs.finished')
-    threads: threads_fn(rulename)
-    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+    threads: threads_fn("align_contigs")
+    resources: walltime = walltime_fn("align_contigs"), mem_gb = mem_gb_fn("align_contigs")
     benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename
     shell:
