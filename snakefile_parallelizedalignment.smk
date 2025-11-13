@@ -210,9 +210,9 @@ rule rename_contigs:
         contigs,
     output:
         OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}/contigs.renamed.fasta"
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
     log: 
         log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename,
         e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_err",
@@ -225,10 +225,10 @@ rulename = "filter_sample_contigs"
 rule filter_sample_contigs:
     input: OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}/contigs.renamed.fasta",
     output: OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}/contigs.flt.fna.gz"
-    threads: threads_fn("rename_contigs")
     params: script =  SRC_DIR / "concatenate.py"
-    resources: walltime = walltime_fn("rename_contigs"), mem_gb = mem_gb_fn("rename_contigs")
     benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
+    threads: threads_fn(rulename)
+    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
     log: 
         log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename,
         e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_err",
@@ -242,10 +242,10 @@ rulename="cat_contigs"
 rule cat_contigs:
     input: lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}/contigs.renamed.fasta", id=sample_id["intermidiate_files"]),
     output: OUTDIR / "intermidiate_files/assembly_mapping_output/contigs.flt.fna.gz"
-    threads: threads_fn(rulename)
     params: script =  SRC_DIR / "concatenate.py"
-    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
     benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files" + rulename
+    threads: threads_fn(rulename)
+    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
     log: 
         log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
         e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",

@@ -39,6 +39,10 @@ rename_contigs:
   threads: 1
   default_mem_gb: 4
 
+filter_sample_contigs:
+  threads: 1
+  default_mem_gb: 4
+
 cat_contigs:
   threads: 1
   default_mem_gb: 4
@@ -65,7 +69,7 @@ weighted_alignment_graph:
 
 create_assembly_alignment_graph:
   threads: 1
-  default_mem_gb: 50
+  default_mem_gb: 40
 
 spades:
   threads: 10
@@ -98,3 +102,7 @@ run_geNomad:
 run_contrastive_VAE:
   threads: 40
   mem_gb: 180
+
+rule all:
+  threads: 1
+  default_mem_gb: 4
