@@ -69,11 +69,11 @@ create_assembly_alignment_graph:
 
 spades:
   threads: 10
-  mem_gb: 200
+  mem_gb: 180
 
 extract_neighs_from_n2v_embeddings:
   threads: 10
-  mem_gb: 200
+  mem_gb: 180
 
 index:
   threads: 8
@@ -97,4 +97,4 @@ run_geNomad:
 
 run_contrastive_VAE:
   threads: 40
-  mem_gb: 250
+  mem_gb: 180
