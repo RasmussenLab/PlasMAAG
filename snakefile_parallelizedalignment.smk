@@ -211,8 +211,8 @@ rule rename_contigs:
     output:
         OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}/contigs.renamed.fasta"
     benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
-    threads: threads_fn(rulename)
-    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+    threads: 1 #threads_fn(rulename)
+    resources: walltime = walltime_fn(rulename), mem_gb = 16 # mem_gb_fn(rulename)
     log: 
         log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename,
         e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_err",
@@ -227,8 +227,8 @@ rule filter_sample_contigs:
     output: OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}/contigs.flt.fna.gz"
     params: script =  SRC_DIR / "concatenate.py"
     benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
-    threads: threads_fn(rulename)
-    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+    threads: 1 # threads_fn(rulename)
+    resources: walltime = walltime_fn(rulename), mem_gb = 16 #mem_gb_fn(rulename)
     log: 
         log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename,
         e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_err",
