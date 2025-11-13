@@ -37,15 +37,15 @@ default_mem_gb: 50
 # If no specific resources are defined for a rule, the default will be used instead.
 rename_contigs:
   threads: 1
-  default_mem_gb: 5
+  default_mem_gb: 4
 
 cat_contigs:
   threads: 1
-  default_mem_gb: 5
+  default_mem_gb: 4
 
 get_contig_names:
   threads: 1
-  default_mem_gb: 5
+  default_mem_gb: 4
 
 samtools_sort:
   threads: 4
@@ -53,15 +53,15 @@ samtools_sort:
 
 circularize:
   threads: 1
-  default_mem_gb: 5
+  default_mem_gb: 4
 
 weighted_assembly_graphs:
   threads: 1
-  default_mem_gb: 5
+  default_mem_gb: 4
 
 weighted_alignment_graph:
   threads: 1
-  default_mem_gb: 5
+  default_mem_gb: 4
 
 create_assembly_alignment_graph:
   threads: 1
