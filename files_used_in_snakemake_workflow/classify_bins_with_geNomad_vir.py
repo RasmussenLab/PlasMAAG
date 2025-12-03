@@ -276,6 +276,20 @@ if __name__ == "__main__":
             "vir": numerator_vir / denominator,
         }
 
+    for cl, cs in virus_dfltcl_cs_d.items():
+            if len(cs) == 0:
+                continue
+            denominator = np.sum([c_len_d[c] for c in cs])
+            numerator_org = np.sum([c_genomad_d[c]["org"] * c_len_d[c] for c in cs])
+            numerator_pla = np.sum([(c_genomad_d[c]["pla"]) * c_len_d[c] for c in cs])
+            numerator_vir = np.sum([(c_genomad_d[c]["vir"]) * c_len_d[c] for c in cs])
+
+            dfltcl_genomadscores_d[cl] = {
+                "org": numerator_org / denominator,
+                "pla": numerator_pla / denominator,
+                "vir": numerator_vir / denominator,
+            }
+
     ## Write scores
     f_nonplasmid_cls = args.dflt_cls.replace(
         ".tsv",
