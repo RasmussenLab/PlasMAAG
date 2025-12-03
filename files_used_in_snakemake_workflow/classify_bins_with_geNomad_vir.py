@@ -162,7 +162,7 @@ if __name__ == "__main__":
     virus_clusters = {
         cl: cs
         for cl, cs in below_threshold_clusters.items()
-        if cl_genomadscores_d[cl]["vir"] >= cl_genomadscores_d[cl]["or"]
+        if cl_genomadscores_d[cl]["vir"] >= cl_genomadscores_d[cl]["org"]
     }
 
     # Use numpy's isin function to optimize masking in bulk
