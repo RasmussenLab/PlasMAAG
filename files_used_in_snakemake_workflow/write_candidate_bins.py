@@ -6,6 +6,21 @@ from git_commit import get_git_commit
 import gzip
 import numpy as np 
 
+def split_clusters_by_sample(clusters):
+    cls_split = dict()
+    for i, (cl_id, cl_cs) in enumerate(clusters.items()):
+        samples_in_cl = set([c.split("C")[0] for c in cl_cs])
+
+        cl_S_d = {S: set() for S in samples_in_cl}
+
+        for c in cl_cs:
+            cl_S_d[c.split("C")[0]].add(c)
+
+        for S, cs in cl_S_d.items():
+            cls_split["%s_%s" % (str(cl_id), S)] = cs
+
+    return cls_split
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Write plasmid and non plasmid bins")
 
@@ -64,18 +79,20 @@ if __name__ == "__main__":
     print(args)
 
     # 
-    plcl_cs_d = { cl:set() for cl,c in np.loadtxt(args.cls_pl,dtype=object,skiprows=1)}
+    plcl_cs_d_ = { cl:set() for cl,c in np.loadtxt(args.cls_pl,dtype=object,skiprows=1)}
     for cl,c in np.loadtxt(args.cls_pl,dtype=object,skiprows=1):
-        plcl_cs_d[cl].add(c)
+        plcl_cs_d_[cl].add(c)
+    plcl_cs_d = split_clusters_by_sample(plcl_cs_d_)
     plcl_len_d = { cl:np.sum([ int(c.split("length_")[1].split("_")[0]) for c in cs]) for cl,cs in plcl_cs_d.items() }
     c2plcl={ c:cl for cl,cs in plcl_cs_d.items() if plcl_len_d[cl] >= args.min_plas_len for c in cs}
     pl_cs = set(c2plcl.keys())
     
     
-    nonplcl_cs_d = { cl:set() for cl,c in np.loadtxt(args.cls_nonpl,dtype=object,skiprows=1)}
+    nonplcl_cs_d_ = { cl:set() for cl,c in np.loadtxt(args.cls_nonpl,dtype=object,skiprows=1)}
     for cl,c in np.loadtxt(
         args.cls_nonpl,dtype=object,skiprows=1):
-        nonplcl_cs_d[cl].add(c)
+        nonplcl_cs_d_[cl].add(c)
+    nonplcl_cs_d = split_clusters_by_sample(nonplcl_cs_d_)
     
     nonplcl_len_d = { cl:np.sum([ int(c.split("length_")[1].split("_")[0]) for c in cs]) for cl,cs in nonplcl_cs_d.items() }
     c2nonplcl={ c:cl for cl,cs in nonplcl_cs_d.items() if nonplcl_len_d[cl] >= args.min_nonplas_len for c in cs}
