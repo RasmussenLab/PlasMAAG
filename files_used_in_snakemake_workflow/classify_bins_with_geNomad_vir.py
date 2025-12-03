@@ -230,7 +230,7 @@ if __name__ == "__main__":
                 f.write("%s\t%s\n" % (cl, c))
 
     ## Write geNomad scores per plasmid candidate cluster
-    with open(args.outp.replace(".tsv", "_gN_scores_organism.tsv"), "w") as f:
+    with open(args.outp.replace(".tsv", "_gN_scores.tsv"), "w") as f:
         f.write(
             "%s\t%s\t%s\t%s\n"
             % ("clustername", "chromosome_score", "plasmid_score", "virus_score")
