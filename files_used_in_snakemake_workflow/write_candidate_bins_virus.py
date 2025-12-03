@@ -119,7 +119,7 @@ if __name__ == "__main__":
     
     vircl_len_d = { cl:np.sum([ int(c.split("length_")[1].split("_")[0]) for c in cs]) for cl,cs in vircl_cs_d.items() }
     c2vircl={ c:cl for cl,cs in vircl_cs_d.items() if vircl_len_d[cl] >= args.min_vir_len for c in cs}
-    vir_cs = set(c2orgcl.keys())
+    vir_cs = set(c2vircl.keys())
 
     os.makedirs(os.path.join(args.outdir,"candidate_plasmids"))
     os.makedirs(os.path.join(args.outdir,"candidate_genomes"))
