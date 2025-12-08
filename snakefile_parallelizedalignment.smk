@@ -141,6 +141,7 @@ rule all:
     output:
         candidate_plasmids = OUTDIR / "results/candidate_plasmids.tsv",
         candidate_genomes = OUTDIR / "results/candidate_genomes.tsv",
+        candidate_virus = OUTDIR / "results/candidate_virus.tsv",
         combined_scores = OUTDIR / "results/scores.tsv",
         results_dir = directory(OUTDIR / "results/")
     params:
@@ -150,6 +151,7 @@ rule all:
         """
         cat {input.candidate_plasmids} > {output.candidate_plasmids}
         cat {input.candidate_genomes} > {output.candidate_genomes}
+        cat {input.candidate_virus} > {output.candidate_virus}
         # Remove header from one of the files
         tail -n+2  {input.candidate_genomes_scores} | cat {input.candidate_plasmids_scores} - > {output.combined_scores}
         # Write bins from cluster candidates
