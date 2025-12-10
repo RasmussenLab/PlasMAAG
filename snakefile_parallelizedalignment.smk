@@ -445,7 +445,10 @@ rule align_all_samples:
         o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
     shell:
         """
-        cat {input.blast_outputs_per_sample} >> {output[0]} 2> {log.log}
+        for file in {OUTDIR}/intermidiate_files/blastn/sample_pairwise/blast_*.txt; do
+        cat $file >> {output[0]} 2>> {log.log}
+        done  
+        #cat {input.blast_outputs_per_sample} >> {output[0]} 2> {log.log}
         touch {output[1]}
         """
 
