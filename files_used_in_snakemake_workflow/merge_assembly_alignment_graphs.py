@@ -27,13 +27,13 @@ def merge_streaming(graph_files, out_path):
     """
     merged_graph = nx.Graph()
 
-    for f in graph_files:
+    for f_i,f in enumerate(graph_files):
         print(f"Loading: {f}")
         t0 = time.time()
         with open(f, "rb") as handle:
             g = pickle.load(handle)
 
-        print(f"  Loaded in {time.time() - t0:.2f}s, adding edges…")
+        print(f" {f_i}/{len(graph_files)} Loaded in {time.time() - t0:.2f}s, adding edges…")
         merged_graph.add_edges_from(g.edges(data=True))
 
         # Free memory from the temporary graph
