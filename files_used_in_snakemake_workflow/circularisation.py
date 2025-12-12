@@ -8,7 +8,7 @@ from git_commit import get_git_commit
 
 
 # Function to process a single BAM file
-def process_bam(bam_path, max_insert_len):
+def process_bam(bam_path, max_insert_len, memory_efficient):
     """
     This function parses a bam file, and identifies paired-end reads where each read mate maps to the end of the contig, within certain distance
 
@@ -85,6 +85,9 @@ def process_bam(bam_path, max_insert_len):
                         read.mate_is_reverse,
                     ]
                 )
+                if memory_efficient == True:
+                    continue
+
                 if reference_name not in allcontig_reads_d.keys():
                     allcontig_reads_d[reference_name] = []
                 allcontig_reads_d[reference_name].append(
@@ -97,6 +100,8 @@ def process_bam(bam_path, max_insert_len):
                 )
 
             else:
+                if memory_efficient == True:
+                    continue
                 if reference_name not in allcontig_reads_d.keys():
                     allcontig_reads_d[reference_name] = []
                 allcontig_reads_d[reference_name].append(
@@ -111,12 +116,13 @@ def process_bam(bam_path, max_insert_len):
 
 
 # Function to process all BAM files in parallel
-def process_all_bams_parallel(dir_bams, max_insert_len):
+def process_all_bams_parallel(dir_bams, max_insert_len, memory_efficient):
     """Parellelize the parsing of the bam files
 
     Args:
         dir_bams (str): Path that contains bam files from all samples.
         max_insert_len (int): Max distance between the end of the contig and the read mapping position for it to be considered.
+        memory_efficient (bool): If True, do not store mapping positions for pairs of reads that are not on oposite ends of contigs.
 
     Returns:
         contig_reads_d: dictionary containing the reads and read position for circularized contigs.
@@ -132,7 +138,7 @@ def process_all_bams_parallel(dir_bams, max_insert_len):
 
     with ProcessPoolExecutor() as executor:
         futures = {
-            executor.submit(process_bam, bam, max_insert_len): bam for bam in bam_files
+            executor.submit(process_bam, bam, max_insert_len, memory_efficient): bam for bam in bam_files
         }
         for future in as_completed(futures):
             bam = futures[future]
@@ -209,12 +215,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--outallreads",
         type=str,
-        help="Path were contig-read information will be stored for all contigs.",
+        help="Path were contig-read information will be stored for all contigs.",    
     )
+
 
     # Parse the arguments
     args = parser.parse_args()
-
+    print(args)
     ## Print git commit so we can debug
     commit_hash = get_git_commit(os.path.abspath(__file__))
     print(f"Git commit hash: {commit_hash}")
@@ -226,7 +233,7 @@ if __name__ == "__main__":
 
     # Run the parallel processing function
     contig_reads_d, allcontig_reads_d = process_all_bams_parallel(
-        args.dir_bams, max_insert_len
+        args.dir_bams, max_insert_len, memory_efficient=True if args.outallreads == None else False
     )
     if args.outcls != None:
         save_circular_contig_clusters(circular_contigs, args.outcls)
