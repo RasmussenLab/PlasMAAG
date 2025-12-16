@@ -14,7 +14,7 @@ _If you don't want PlasMAAG to assemble the reads, you can also pass in the path
 See the preprint for more information: ["Accurate plasmid reconstruction from metagenomics data using assembly-alignment graphs and contrastive learning"](https://www.biorxiv.org/content/10.1101/2025.02.26.640269v2.abstract)
 
 ## Quick Start :rocket:
-Clone the repository and install the package using conda
+Clone the repository and install the package using conda (Installation on a machine with 8 threads and 32GB of RAM usually takes aroun 12 minutes): 
 ```
 git clone https://github.com/RasmussenLab/PlasMAAG
 conda env create -n PlasMAAG --file=PlasMAAG/envs/PlasMAAG.yaml
@@ -62,7 +62,7 @@ The path to the SPAdes output directory (under the assembly_dir column in the ab
 To see all options for the program run `PlasMAAG --help`
 
 If interested in executing a testrun of PlasMAAG, please check the section ["Running the tool on test data
-"](#Running-the-tool-on-test-data) or the Zenodo entry [here](https://zenodo.org/records/15263434). 
+"](#Running-the-tool-on-test-data) or the Zenodo entry [here](https://zenodo.org/records/17953597), which should take less than 10 minutes on a computer with 8 threads and 32GB of RAM. 
 
 
 ## Output files
@@ -109,7 +109,7 @@ conda activate PlasMAAG
 ```
 Then download the test data
 ```
-wget -O input_data.tar.gz https://zenodo.org/records/15263434/files/input_data.tar.gz\?download\=1
+wget -O input_data.tar.gz https://zenodo.org/records/17953597/files/input_data.tar.gz?download=1
 tar -xvf input_data.tar.gz
 ```
 Lastly run PlasMAAG.  
