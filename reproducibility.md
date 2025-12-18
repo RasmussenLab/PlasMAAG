@@ -197,6 +197,19 @@ binbench bench -s C out5 DARWIN_long_reads.json test_runs_DARWIN/intermidiate_fi
 # This number should be around 63
 jq '.genomes_genomic_recall[0][3][4]' out5/recovery.json
 ```
+Or in an interactive session:
+ ```bash
+ # Start and interactive julia session
+ julia 
+ ```        
+ ```julia
+ using BinBencherBackend
+ ref_f="DARWIN_long_reads.json"
+ ref_darwin= open(i -> Reference(i), ref_f)
+Binning("test_run_DARWIN/intermidiate_files/contrastive_VAE/vae_clusters_community_based_complete_and_circular_unsplit.tsv",ref_darwin,binsplit_separator="C") 
+ ```
+
+count the number of long-read assemblies reconstructed from the community-based clustering, the number reported is the HQ bins, which should be somewhere around 63.
 
 6. To run SCAPP, first you have to install it [https://github.com/Shamir-Lab/SCAPP?tab=readme-ov-file#installation], and then you are ready to run it:
 
