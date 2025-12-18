@@ -201,3 +201,20 @@ binbench bench -s C out6 DARWIN_long_reads_scapp.json scapp_DARWIN/cycles_confid
 # This number should be around 17
 jq '.genomes_genomic_recall[0][3][4]' out6/recovery.json
 ```
+
+# Generating your own BinBencher reference files
+The examples above show how to make use of pre-defined BinBencher reference JSON files.
+To run and benchmark PlasMAAG on your own samples, you may want to create your own references.
+
+!!! note
+    BinBencher reference files store a _ground truth reference_ for a dataset,
+    and can therefore only be used if you have some sort of ground truth, e.g.
+    a simulated data, or in the case of PlasMAAG, paired long/short read. 
+
+You will need:
+* The set of genomes in your sample, as FASTA files
+* The taxonomy of these genomes, in a tree, if you want benchmarking on other phylogenetic levels than genome
+* The set of sequences used for binning as a FASTA file
+* The mapping positions of sequence to the genomes
+
+For specifics about how to create your own reference JSON, see the BinBencher documentation [https://viralinstruction.com/BinBencherBackend.jl/v0.3.4/make_ref/]
