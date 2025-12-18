@@ -53,7 +53,7 @@ To evaluate the cellular genomes:
 using BinBencherBackend
 ref_f="Airways.json”
 ref_airways= open(i -> Reference(i), ref_f)
-    Binning("test_run_Airways/intermidiate_files/contrastive_VAE/vae_clusters_density_unsplit.tsv",ref_airways,binsplit_separator="C",filter_genomes=is_organism)
+Binning("test_run_Airways/intermidiate_files/contrastive_VAE/vae_clusters_density_unsplit.tsv",ref_airways,binsplit_separator="C",filter_genomes=is_organism)
 ```
 
 count the number of cellular genomes reconstructed from the density-based clustering, the number reported is the HQ bins, which should be somewhere around 53.
