@@ -236,7 +236,7 @@ rule get_contig_names:
     benchmark: config.get("benchmark", "benchmark/") + "{key}_" + rulename
     log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
     shell:
-        "zcat {input} | grep '>' | sed 's/>//' > {output} 2> {log} "
+        "gunzip -dc {input} | grep '>' | sed 's/>//' > {output} 2> {log} "
 
 # Run strobealign to get the abundances  
 rulename = "Strobealign_bam_default"
