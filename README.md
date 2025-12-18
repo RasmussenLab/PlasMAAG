@@ -13,6 +13,7 @@ _If you don't want PlasMAAG to assemble the reads, you can also pass in the path
 
 See the preprint for more information: ["Accurate plasmid reconstruction from metagenomics data using assembly-alignment graphs and contrastive learning"](https://www.biorxiv.org/content/10.1101/2025.02.26.640269v2.abstract)
 
+
 ## Quick Start :rocket:
 Clone the repository and install the package using conda (Installation on a machine with 8 threads and 32GB of RAM usually takes aroun 12 minutes + 15 minutes to download geNomad database): 
 ```
@@ -64,6 +65,7 @@ To see all options for the program run `PlasMAAG --help`
 If interested in executing a testrun of PlasMAAG, please check the section ["Running the tool on test data
 "](#Running-the-tool-on-test-data) or the Zenodo entry [here](https://zenodo.org/records/17953597), which should take less than 10 minutes on a computer with 8 threads and 32GB of RAM. 
 
+We also created a [page](https://github.com/RasmussenLab/PlasMAAG/blob/main/reproducibility.md) with instructions to reproduce some of the main results from PlasMAAG publication.
 
 ## Output files
 The program produces three directories in the output directory choosen
