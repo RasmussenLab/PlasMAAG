@@ -104,7 +104,15 @@ count the number of cellular genomes reconstructed from the density-based cluste
     Binning("scapp_Airways/cycles_confident_clusters.tsv",ref_airways_scapp,binsplit_separator="C",filter_genomes=is_plasmid) 
     ```
     count the number of plasmid reconstructed from the SCAPP confident, the number reported is the HQ bins, which should be somewhere around 189.
-        
+
+    To evaluate SCAPP_cycles:
+    ```julia
+    using BinBencherBackend
+    ref_f =  “Airways.json”
+    ref_airways_scapp= open(i -> Reference(i), ref_f)
+    Binning("scapp_Airways/cycles_clusters.tsv",ref_airways_scapp,binsplit_separator="C",filter_genomes=is_plasmid) 
+    ```
+    count the number of plasmid reconstructed from the SCAPP cycles, the number reported is the HQ bins, which should be somewhere around 254.
 
 # Figure 4.B
 
