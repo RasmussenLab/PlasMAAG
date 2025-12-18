@@ -41,7 +41,7 @@ Te generate the bins required for figure 2, we start with running PlasMAAG, and 
     ```
     ```julia
     using BinBencherBackend
-    ref_f =  “Airways.json”
+    ref_f = 'Airways.json'
     ref_airways= open(i -> Reference(i), ref_f)
     Binning("test_runs/Airways/intermidiate_files/contrastive_VAE/vae_clusters_community_based_complete_and_circular_unsplit.tsv",ref_airways,binsplit_separator="C",filter_genomes=is_plasmid) 
     ```
@@ -108,7 +108,7 @@ count the number of cellular genomes reconstructed from the density-based cluste
     To evaluate SCAPP_cycles:
     ```julia
     using BinBencherBackend
-    ref_f =  “Airways.json”
+    ref_f =  'Airways.json'
     ref_airways_scapp= open(i -> Reference(i), ref_f)
     Binning("scapp_Airways/cycles_clusters.tsv",ref_airways_scapp,binsplit_separator="C",filter_genomes=is_plasmid) 
     ```
@@ -151,7 +151,7 @@ Te generate the bins required for figure 4.B, we follow a similar procedure than
     ```        
     ```julia
     using BinBencherBackend
-    ref_f =  “DARWIN_long_reads.json”
+    ref_f =  'DARWIN_long_reads.json'
     ref_darwin= open(i -> Reference(i), ref_f)
 Binning("test_runs_DARWIN/intermidiate_files/contrastive_VAE/vae_clusters_community_based_complete_and_circular_unsplit.tsv",ref_darwin,binsplit_separator="C") 
     ```
@@ -198,7 +198,7 @@ Binning("test_runs_DARWIN/intermidiate_files/contrastive_VAE/vae_clusters_commun
     ```                
     ```julia
     using BinBencherBackend
-    ref_f =  “DARWIN_long_reads_scapp.json”
+    ref_f =  'DARWIN_long_reads_scapp.json'
     ref_darwin_scapp= open(i -> Reference(i), ref_f)
     Binning("scapp_DARWIN/cycles_confident_clusters.tsv",ref_darwin_scapp,binsplit_separator="C",filter_genomes=is_plasmid) 
     ```
