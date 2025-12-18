@@ -49,11 +49,11 @@ wget https://www.erda.dk/archives/426ef81eb35ea07078bb0041ee186c84/references/Ai
 binbench bench -s C --keep-flags plasmid out1 Airways.json test_run_Airways/intermidiate_files/contrastive_VAE/vae_clusters_community_based_complete_and_circular_unsplit.tsv
 ```
 
-The result is the fifth element (precision: 0.95) of the fourth element (recall: 0.9) of the first element (genome level) of the "genomes_genomic_recall" field in the file `recovery.json`.
+The result is the fifth element (precision: 0.95) of the fourth element (recall: 0.9) of the first element (genome level) of the "bins_genomic_recall" field in the file `recovery.json`.
 One way to extract this number from command line is with the JSON reading tool `jq`.
-The number reported is the HQ plasmids reconstructed from community based clustering, which should be somewhere around 310.
+The number reported is the number of plasmid HQ bins reconstructed from community based clustering, which should be somewhere around 310.
 ```bash
-jq '.genomes_genomic_recall[0][3][4]' out1/recovery.json
+jq '.bins_genomic_recall[0][3][4]' out1/recovery.json
 ```
 We can also do it in an interactive session:
  ```bash
@@ -67,11 +67,11 @@ We can also do it in an interactive session:
  Binning("test_run_Airways/intermidiate_files/contrastive_VAE/vae_clusters_community_based_complete_and_circular_unsplit.tsv",ref_airways,binsplit_separator="C",filter_genomes=is_plasmid) 
  ```
 
-To evaluate the cellular genomes, as found using density based clustering:
+To evaluate the bins representing cellular genomes, as found using density based clustering:
 
 ```bash
 binbench bench -s C --keep-flags organism out2 Airways.json test_run_Airways/intermidiate_files/contrastive_VAE/vae_clusters_density_unsplit.tsv
-jq '.genomes_genomic_recall[0][3][4]' out2/recovery.json
+jq '.bins_genomic_recall[0][3][4]' out2/recovery.json
 ```
 We can also do it in an interactive session:
  ```bash
@@ -121,13 +121,13 @@ done
 # Download references
 wget https://www.erda.dk/archives/426ef81eb35ea07078bb0041ee186c84/references/scapp_references/Airways.json
 
-# Check the number of plasmid reconstructed from the SCAPP confident, which should be somewhere around 189.
+# Check the number of plasmid bins reconstructed from the SCAPP confident, which should be somewhere around 189.
 binbench bench -s C --keep-flags plasmid out3 Airways.json scapp_Airways/cycles_confident_clusters.tsv
-jq '.genomes_genomic_recall[0][3][4]' out3/recovery.json
+jq '.bins_genomic_recall[0][3][4]' out3/recovery.json
 
 # To evaluate SCAPP cycles, which should be around 254:
 binbench bench -s C --keep-flags plasmid out4 Airways.json scapp_Airways/cycles_clusters.ts
-jq '.genomes_genomic_recall[0][3][4]' out4/recovery.json
+jq '.bins_genomic_recall[0][3][4]' out4/recovery.json
 ```
 Or in an interactive session:
  ```bash
@@ -140,7 +140,7 @@ Or in an interactive session:
  ref_airways_scapp= open(i -> Reference(i), ref_f)
  Binning("scapp_Airways/cycles_confident_clusters.tsv",ref_airways_scapp,binsplit_separator="C",filter_genomes=is_plasmid) 
  ```
- count the number of plasmid reconstructed from the SCAPP confident, the number reported is the HQ bins, which should be somewhere around 189.
+ count the number of plasmid bins reconstructed from the SCAPP confident, the number reported is the HQ bins, which should be somewhere around 189.
 
  To evaluate SCAPP_cycles:
  ```julia
@@ -149,7 +149,7 @@ Or in an interactive session:
  ref_airways_scapp= open(i -> Reference(i), ref_f)
  Binning("scapp_Airways/cycles_clusters.tsv",ref_airways_scapp,binsplit_separator="C",filter_genomes=is_plasmid) 
  ```
- count the number of plasmid reconstructed from the SCAPP cycles, the number reported is the HQ bins, which should be somewhere around 254.
+ count the number of plasmid bins reconstructed from the SCAPP cycles, the number reported is the HQ bins, which should be somewhere around 254.
 
 # Figure 4.B
 
@@ -195,7 +195,7 @@ wget https://www.erda.dk/archives/426ef81eb35ea07078bb0041ee186c84/references/DA
 binbench bench -s C out5 DARWIN_long_reads.json test_runs_DARWIN/intermidiate_files/contrastive_VAE/vae_clusters_community_based_complete_and_circular_unsplit.tsv
 # get the number from the json file with jq
 # This number should be around 63
-jq '.genomes_genomic_recall[0][3][4]' out5/recovery.json
+jq '.bins_genomic_recall[0][3][4]' out5/recovery.json
 ```
 Or in an interactive session:
  ```bash
@@ -253,7 +253,7 @@ wget https://www.erda.dk/archives/426ef81eb35ea07078bb0041ee186c84/references/sc
 binbench bench -s C out6 DARWIN_long_reads_scapp.json scapp_DARWIN/cycles_confident_clusters.tsv
 # get the number from the json file with jq
 # This number should be around 17
-jq '.genomes_genomic_recall[0][3][4]' out6/recovery.json
+jq '.bins_genomic_recall[0][3][4]' out6/recovery.json
 ```
 Or in an interactive session:
  ```bash
