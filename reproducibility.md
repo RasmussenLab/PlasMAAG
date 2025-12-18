@@ -22,7 +22,7 @@ Te generate the bins required for figure 2, we start with running PlasMAAG, and 
 4. Run PlasMAAG:
     ```bash
     conda activate PlasMAAG_zenodo # activate environment
-    PlasMAAG --reads_and_assembly_dir read_and_assembly_dir_Airways.tsv  --output test_run_Airways -t 16 --vamb_arguments '-o C --seed 1’ --genomad_thr '0.1’  # run plasmaag on the Airways dataset
+    PlasMAAG --reads_and_assembly_dir read_and_assembly_dir_Airways.tsv  --output test_run_Airways -t 16 --vamb_arguments '-o C --seed 1’  # run plasmaag on the Airways dataset
     ```
     
 5. PlasMAAG generates all the files necessary to run all the other binners:
@@ -132,7 +132,7 @@ Te generate the bins required for figure 4.B, we follow a similar procedure than
 3. Run PlasMAAG:
     ```bash
     conda activate PlasMAAG_zenodo # activate environment
-    PlasMAAG --reads_and_assembly_dir read_and_assembly_dir.tsv  --output test_run_DARWIN -t 16 --vamb_arguments '-o C --seed 1’ --genomad_thr '0.95’
+    PlasMAAG --reads_and_assembly_dir read_and_assembly_dir.tsv  --output test_run_DARWIN -t 16 --vamb_arguments '-o C --seed 1’ 
     ```
 
 4. PlasMAAG generates all the files necessary to run all the other binners:
