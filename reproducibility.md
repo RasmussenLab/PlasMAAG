@@ -32,32 +32,32 @@ Te generate the bins required for figure 2, we start with running PlasMAAG, and 
     # sorted bam files
    test_run_Airways/intermidiate_files/assembly_mapping_output/mapped_sorted/*.bam.sort
     ```
-7. Once we get the cluster files. We can evaluate the binning with BinBencher. Here [https://viralinstruction.com/BinBencherBackend.jl/dev/walkthrough/] is an extensive documentation about how to run BinBencher. In short, after installing julia and BinBencher, we just have to:
-    ```bash
-   # Download references
-    wget https://www.erda.dk/archives/426ef81eb35ea07078bb0041ee186c84/references/Airways.json
-    # Start and interactive julia session
-    julia 
-    ```
-    ```julia
-    using BinBencherBackend
-    ref_f =  “Airways.json”
-    ref_airways= open(i -> Reference(i), ref_f)
-    Binning("test_runs/Airways/intermidiate_files/contrastive_VAE/vae_clusters_community_based_complete_and_circular_unsplit.tsv",ref_airways,binsplit_separator="C",filter_genomes=is_plasmid) 
-    ```
-        
-   count the number of plasmid reconstructed from the community-based clustering, the number reported is the HQ bins, which should be somewhere around 310.
+7. Once we get the cluster files. We can evaluate the binning with BinBencher.
+   The BinBencher documentation can be found here [https://viralinstruction.com/BinBencherBackend.jl/v0.3.4/], and the BinBencher installation instructions can be found here [https://github.com/jakobnissen/BinBencher.jl].
+   Once it's installed, we can run it from command line, like so:
 
-To evaluate the cellular genomes:
- ```julia
-using BinBencherBackend
-ref_f =  “Airways.json”
-ref_airways= open(i -> Reference(i), ref_f)
-    Binning("test_runs/Airways/intermidiate_files/contrastive_VAE/vae_clusters_density_unsplit.tsv",ref_airways,binsplit_separator="C",filter_genomes=is_organism)
+```bash
+# Download references
+wget https://www.erda.dk/archives/426ef81eb35ea07078bb0041ee186c84/references/Airways.json
+# run BinBencher
+binbench bench -s C --keep-flags plasmid out1 Airways.json "test_runs/Airways/intermidiate_files/contrastive_VAE/vae_clusters_community_based_complete_and_circular_unsplit.tsv
 ```
 
-count the number of cellular genomes reconstructed from the density-based clustering, the number reported is the HQ bins, which should be somewhere around 53.
+The result is the fifth element (precision: 0.95) of the fourth element (recall: 0.9) of the first element (genome level) of the "genomes_genomic_recall" field in the file `recovery.json`.
+One way to extract this number from command line is with the JSON reading tool `jq`.
+The number reported is the HQ plasmids reconstructed from community based clustering, which should be somewhere around 310. 
+```bash
+jq '.genomes_genomic_recall[0][3][4]' out1/recovery.json
+```
 
+To evaluate the cellular genomes, as found using density based clustering:
+
+```bash
+binbench bench -s C --keep-flags organism out2 Airways.json test_runs/Airways/intermidiate_files/contrastive_VAE/vae_clusters_density_unsplit.tsv
+jq '.genomes_genomic_recall[0][3][4]' out2/recovery.json
+```
+
+The answer should be around 53.
         
 10. To run SCAPP, first you have to install it [https://github.com/Shamir-Lab/SCAPP?tab=readme-ov-file#installation], and then you are ready to run it:
     ```bash
@@ -91,28 +91,18 @@ count the number of cellular genomes reconstructed from the density-based cluste
     ```
         
 12. Evaluate SCAPP binning with BinBencher
-    ```bash
-    # Download references
-    wget https://www.erda.dk/archives/426ef81eb35ea07078bb0041ee186c84/references/scapp_references/Airways.json
-    # Start and interactive julia session
-    julia 
-    ```        
-    ```julia
-    using BinBencherBackend
-    ref_f =  “Airways.json”
-    ref_airways_scapp= open(i -> Reference(i), ref_f)
-    Binning("scapp_Airways/cycles_confident_clusters.tsv",ref_airways_scapp,binsplit_separator="C",filter_genomes=is_plasmid) 
-    ```
-    count the number of plasmid reconstructed from the SCAPP confident, the number reported is the HQ bins, which should be somewhere around 189.
+```bash
+# Download references
+wget https://www.erda.dk/archives/426ef81eb35ea07078bb0041ee186c84/references/scapp_references/Airways.json
 
-    To evaluate SCAPP_cycles:
-    ```julia
-    using BinBencherBackend
-    ref_f =  “Airways.json”
-    ref_airways_scapp= open(i -> Reference(i), ref_f)
-    Binning("scapp_Airways/cycles_clusters.tsv",ref_airways_scapp,binsplit_separator="C",filter_genomes=is_plasmid) 
-    ```
-    count the number of plasmid reconstructed from the SCAPP cycles, the number reported is the HQ bins, which should be somewhere around 254.
+# Check the number of plasmid reconstructed from the SCAPP confident, which should be somewhere around 189.
+binbench bench -s C --keep-flags plasmid out3 Airways.json scapp_Airways/cycles_confident_clusters.tsv
+jq '.genomes_genomic_recall[0][3][4]' out3/recovery.json
+
+# To evaluate SCAPP cycles, which should be around 254:
+binbench bench -s C --keep-flags plasmid out4 Airways.json scapp_Airways/cycles_clusters.ts
+jq '.genomes_genomic_recall[0][3][4]' out4/recovery.json
+```
 
 # Figure 4.B
 
@@ -142,20 +132,20 @@ Te generate the bins required for figure 4.B, we follow a similar procedure than
    # sorted bam files
    test_run_DARWIN/intermidiate_files/assembly_mapping_output/mapped_sorted/*.bam.sort 
    ```
-6. Once we get the cluster files. We can evaluate the binning with BinBencher. Here [https://viralinstruction.com/BinBencherBackend.jl/dev/walkthrough/] is an extensive documentation about how to run BinBencher. In short, after installing julia and BinBencher, we just have to:
-    ```bash
-   # Download references
-    wget https://www.erda.dk/archives/426ef81eb35ea07078bb0041ee186c84/references/DARWIN_long_reads.json
-    # Start and interactive julia session
-    julia 
-    ```        
-    ```julia
-    using BinBencherBackend
-    ref_f =  “DARWIN_long_reads.json”
-    ref_darwin= open(i -> Reference(i), ref_f)
-Binning("test_runs_DARWIN/intermidiate_files/contrastive_VAE/vae_clusters_community_based_complete_and_circular_unsplit.tsv",ref_darwin,binsplit_separator="C") 
-    ```
-   count the number of long-read assemblies reconstructed from the community-based clustering, the number reported is the HQ bins, which should be somewhere around 63.
+6. Once we get the cluster files. We can evaluate the binning with BinBencher.
+   See the instructions above for how to install BinBencher, and its documentation.
+   After installing, run:
+
+```bash
+# Download references
+wget https://www.erda.dk/archives/426ef81eb35ea07078bb0041ee186c84/references/DARWIN_long_reads.json
+
+# Benchmark number of long-read assemblies reconstructed from the community-based clustering
+binbench bench -s C out5 DARWIN_long_reads.json test_runs_DARWIN/intermidiate_files/contrastive_VAE/vae_clusters_community_based_complete_and_circular_unsplit.tsv
+# get the number from the json file with jq
+# This number should be around 63
+jq '.genomes_genomic_recall[0][3][4]' out5/recovery.json
+```
         
 7. To run SCAPP, first you have to install it [https://github.com/Shamir-Lab/SCAPP?tab=readme-ov-file#installation], and then you are ready to run it:        
     ```bash
@@ -190,16 +180,14 @@ Binning("test_runs_DARWIN/intermidiate_files/contrastive_VAE/vae_clusters_commun
     ```
         
 9. Evaluate SCAPP binning with BinBencher
-    ```bash
-   # Download references
-    wget https://www.erda.dk/archives/426ef81eb35ea07078bb0041ee186c84/references/scapp_references/DARWIN_long_reads_scapp.json
-    # Start and interactive julia session
-    julia 
-    ```                
-    ```julia
-    using BinBencherBackend
-    ref_f =  “DARWIN_long_reads_scapp.json”
-    ref_darwin_scapp= open(i -> Reference(i), ref_f)
-    Binning("scapp_DARWIN/cycles_confident_clusters.tsv",ref_darwin_scapp,binsplit_separator="C",filter_genomes=is_plasmid) 
-    ```
-   count the number of plasmid reconstructed from the SCAPP confident, the number reported is the HQ bins, which should be somewhere around 17.
+```bash
+# Download references
+wget https://www.erda.dk/archives/426ef81eb35ea07078bb0041ee186c84/references/scapp_references/DARWIN_long_reads_scapp.json
+
+
+# Benchmark number of plasmid reconstructed from the SCAPP confident
+binbench bench -s C out6 DARWIN_long_reads_scapp.json scapp_DARWIN/cycles_confident_clusters.tsv
+# get the number from the json file with jq
+# This number should be around 17
+jq '.genomes_genomic_recall[0][3][4]' out6/recovery.json
+```
