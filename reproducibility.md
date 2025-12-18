@@ -46,7 +46,7 @@ test_run_Airways/intermidiate_files/assembly_mapping_output/mapped_sorted/*.bam.
 # Download references
 wget https://www.erda.dk/archives/426ef81eb35ea07078bb0041ee186c84/references/Airways.json
 # run BinBencher
-binbench bench -s C --keep-flags plasmid out1 Airways.json "test_runs/Airways/intermidiate_files/contrastive_VAE/vae_clusters_community_based_complete_and_circular_unsplit.tsv
+binbench bench -s C --keep-flags plasmid out1 Airways.json test_run_Airways/intermidiate_files/contrastive_VAE/vae_clusters_community_based_complete_and_circular_unsplit.tsv
 ```
 
 The result is the fifth element (precision: 0.95) of the fourth element (recall: 0.9) of the first element (genome level) of the "genomes_genomic_recall" field in the file `recovery.json`.
@@ -59,7 +59,7 @@ jq '.genomes_genomic_recall[0][3][4]' out1/recovery.json
 To evaluate the cellular genomes, as found using density based clustering:
 
 ```bash
-binbench bench -s C --keep-flags organism out2 Airways.json test_runs/Airways/intermidiate_files/contrastive_VAE/vae_clusters_density_unsplit.tsv
+binbench bench -s C --keep-flags organism out2 Airways.json test_run_Airways/intermidiate_files/contrastive_VAE/vae_clusters_density_unsplit.tsv
 jq '.genomes_genomic_recall[0][3][4]' out2/recovery.json
 ```
 
