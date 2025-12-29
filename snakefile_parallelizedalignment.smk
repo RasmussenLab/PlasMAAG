@@ -158,9 +158,9 @@ rule all:
         cat {input.candidate_genomes} > {output.candidate_genomes}
         cat {input.candidate_virus} > {output.candidate_virus}
         # Remove header from one of the files
-        # tail -n+2  {input.candidate_genomes_scores} | cat {input.candidate_plasmids_scores} - > {output.combined_scores}
+        tail -n+2  {input.candidate_genomes_scores} | cat {input.candidate_plasmids_scores} - > {output.combined_scores}
         # Write bins from cluster candidates
-        python {params.path} --cls_pl {output.candidate_plasmids} --cls_org {output.candidate_genomes} --cls_virus {output.candidate_virus} --contigs {input.contigs} --outdir {output.results_dir}
+        python {params.path} --cls_pl {output.candidate_plasmids} --cls_org {output.candidate_genomes} --cls_vir {output.candidate_virus} --contigs {input.contigs} --outdir {output.results_dir}
         """
 
 #If the genomad database is given as an argument don't download it again
