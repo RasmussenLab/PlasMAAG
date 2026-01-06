@@ -15,7 +15,7 @@ See the preprint for more information: ["Accurate plasmid reconstruction from me
 
 
 ## Quick Start :rocket:
-Clone the repository and install the package using conda (Installation on a machine with 8 threads and 32GB of RAM usually takes aroun 12 minutes + 15 minutes to download geNomad database): 
+Clone the repository and install the package using conda (Installation on a machine with 8 threads and 32GB of RAM usually takes around 12 minutes + 15 minutes to download geNomad database): 
 ```
 git clone https://github.com/RasmussenLab/PlasMAAG
 conda env create -n PlasMAAG --file=PlasMAAG/envs/PlasMAAG.yaml
