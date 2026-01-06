@@ -20,7 +20,7 @@ Clone the repository and install the package using conda (Installation on a mach
 git clone https://github.com/RasmussenLab/PlasMAAG
 conda env create -n PlasMAAG --file=PlasMAAG/envs/PlasMAAG.yaml
 ```
-:heavy_exclamation_mark: PlasMAAG does not support MacOS  
+:heavy_exclamation_mark: PlasMAAG does only support Linux.  
   
 To use the program activate the conda environment
 ```
