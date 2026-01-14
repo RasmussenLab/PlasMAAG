@@ -458,12 +458,8 @@ rule align_all_samples:
         find {OUTDIR}/intermidiate_files/blastn/sample_pairwise \
         -type f -name 'blast_*.txt' -print0 \
         | xargs -0 -r cat -- \
-        >> {output[0]} 2>> {log.log}
+        >> {output[0]} 2>> {log.log}        
         
-        # for file in {OUTDIR}/intermidiate_files/blastn/sample_pairwise/blast_*.txt; do
-        # cat $file >> {output[0]} 2>> {log.log}
-        # done  
-        # cat {input.blast_outputs_per_sample} >> {output[0]} 2> {log.log}
         touch {output[1]}
         """
 
