@@ -455,7 +455,7 @@ rule align_all_samples:
         : > "{output[0]}"
 
         # Concatenate all matching files safely (no ARG_MAX issues)
-        find "{OUTDIR}/intermediate_files/blastn/sample_pairwise" \
+        find "{OUTDIR}/intermidiate_files/blastn/sample_pairwise" \
         -type f -name 'blast_*.txt' -print0 \
         | xargs -0 -r cat -- \
         >> "{output[0]}" 2>> "{log}"
