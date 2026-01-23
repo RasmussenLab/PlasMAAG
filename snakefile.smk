@@ -97,7 +97,8 @@ if config.get("read_assembly_dir") != None:
     sample_id_path = collections.defaultdict(dict)
     sample_id_path_assembly = collections.defaultdict(dict)
     for id, (read1, read2, assembly) in enumerate(zip( df.read1, df.read2, df.assembly_dir)):
-        id = f"sample{str(id)}"
+        #id = f"sample{str(id)}"
+        id = f"{str(id)}"
         sample = "intermidiate_files"
         sample_id[sample].append(id)
         sample_id_path[sample][id] = [read1, read2]
