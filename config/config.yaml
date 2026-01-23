@@ -37,15 +37,19 @@ default_mem_gb: 50
 # If no specific resources are defined for a rule, the default will be used instead.
 rename_contigs:
   threads: 1
-  default_mem_gb: 5
+  default_mem_gb: 4
+
+filter_sample_contigs:
+  threads: 1
+  default_mem_gb: 4
 
 cat_contigs:
   threads: 1
-  default_mem_gb: 5
+  default_mem_gb: 4
 
 get_contig_names:
   threads: 1
-  default_mem_gb: 5
+  default_mem_gb: 4
 
 samtools_sort:
   threads: 4
@@ -53,27 +57,27 @@ samtools_sort:
 
 circularize:
   threads: 1
-  default_mem_gb: 5
+  default_mem_gb: 4
 
 weighted_assembly_graphs:
   threads: 1
-  default_mem_gb: 5
+  default_mem_gb: 4
 
 weighted_alignment_graph:
   threads: 1
-  default_mem_gb: 5
+  default_mem_gb: 4
 
 create_assembly_alignment_graph:
   threads: 1
-  default_mem_gb: 50
+  default_mem_gb: 40
 
 spades:
   threads: 10
-  mem_gb: 200
+  mem_gb: 180
 
 extract_neighs_from_n2v_embeddings:
   threads: 10
-  mem_gb: 200
+  mem_gb: 180
 
 index:
   threads: 8
@@ -88,8 +92,8 @@ sort:
   mem_gb: 120
 
 align_contigs:
-  threads: 8
-  mem_gb: 120
+  threads: 4
+  mem_gb: 16
 
 run_geNomad:
   threads: 40
@@ -97,4 +101,8 @@ run_geNomad:
 
 run_contrastive_VAE:
   threads: 40
-  mem_gb: 250
+  mem_gb: 180
+
+rule all:
+  threads: 1
+  default_mem_gb: 4
