@@ -80,11 +80,13 @@ The *results* directory contains:
 results
 ├── candidate_plasmids/ : A directory containing the the candidate plasmids
 ├── candidate_genomes/ : A directory containing the candidate chromosomes
+├── candidate_virus/ : A directory containing the candidate viruses
 ├── candidate_plasmids.tsv : An overview of which contigs are binned together as candidate plasmids
 ├── candidate_genomes.tsv : An overview of which contigs are binned together as candidate chromosomes
+├── candidate_virus.tsv : An overview of which contigs are binned together as candidate viruses
 └── scores.tsv : The aggregated scores for each cluster 
 ````
-The `candidate_plasmids.tsv` and `candidate_genomes.tsv` files are formatted as:
+The `candidate_plasmids.tsv`, `candidate_genomes.tsv` and `candidate_virus.tsv` files are formatted as:
 ````
 clustername     contigname
 nneighs_1051    Ssample0CNODE_198_length_19708_cov_59.381163
@@ -124,8 +126,10 @@ Once the workflow finishes, several files and folders will be generated within t
 ```
 candidate_plasmids.tsv # The candidate plasmids
 candidate_genomes.tsv # The candidate chromosomes
+candidate_virus.tsv # The candidate viruses
 candidate_plasmids # Directory with the candidate plasmids fasta files
 candidate_genomes # Directory with the candidate chromosomes fasta files
+candidate_viruses # Directory with the candidate virus fasta files
 scores.tsv # The aggregated scores for each plasmid and genome cluster
 ```
 
