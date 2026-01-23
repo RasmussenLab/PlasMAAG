@@ -142,7 +142,7 @@ def make_dataloader_n2v(
 
     zero_tnf = tnf.sum(axis=1) == 0
     smallest_index = _np.argmax(zero_tnf)
-    if zero_tnf[smallest_index]:
+    if zero_tnf[smallest_index] and (tnf[smallest_index] == 0).all():
         raise ValueError(
             f"TNF row at index {smallest_index} is all zeros. "
             + "This implies that the sequence contained no 4-mers of A, C, G, T or U, "

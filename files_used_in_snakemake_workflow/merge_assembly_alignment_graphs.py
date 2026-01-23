@@ -1,6 +1,8 @@
 import os
 import pickle
 import time
+import gc
+
 
 import numpy as np
 import networkx as nx
@@ -14,6 +16,35 @@ def merge_graphs(graphs_list):
 
     for graph in graphs_list:
         merged_graph.add_edges_from(graph.edges(data=True))
+
+    return merged_graph
+
+def merge_streaming(graph_files, out_path):
+    """
+    Efficiently merge NetworkX graphs by loading each graph
+    one at a time, extracting edges, and immediately deleting
+    the temporary graph to free memory.
+    """
+    merged_graph = nx.Graph()
+
+    for f_i,f in enumerate(graph_files):
+        print(f"Loading: {f}")
+        t0 = time.time()
+        with open(f, "rb") as handle:
+            g = pickle.load(handle)
+
+        print(f" {f_i}/{len(graph_files)} Loaded in {time.time() - t0:.2f}s, adding edges…")
+        merged_graph.add_edges_from(g.edges(data=True))
+
+        # Free memory from the temporary graph
+        del g
+        gc.collect()
+
+    print("All files merged. Saving result…")
+    with open(out_path, "wb") as handle:
+        pickle.dump(merged_graph, handle)
+
+    print(f"Merged graph: {merged_graph.number_of_nodes()} nodes, {merged_graph.number_of_edges()} edges")
 
     return merged_graph
 
@@ -53,26 +84,31 @@ if __name__ == "__main__":
     print(f"Git commit hash: {commit_hash}")
 
     print(args)
-    t0 = time.time()
+    # t0 = time.time()
 
-    graphs_to_merge = []
-    for assembly_graph_f in args.graphs_assembly:
-        with open(assembly_graph_f, "rb") as picklefile:
-            graphs_to_merge.append(pickle.load(picklefile))
+    # graphs_to_merge = []
+    # for assembly_graph_f in args.graphs_assembly:
+    #     with open(assembly_graph_f, "rb") as picklefile:
+    #         graphs_to_merge.append(pickle.load(picklefile))
 
-    with open(args.graph_alignment, "rb") as picklefile:
-        graphs_to_merge.append(pickle.load(picklefile))
+    # with open(args.graph_alignment, "rb") as picklefile:
+    #     graphs_to_merge.append(pickle.load(picklefile))
 
-    t1 = time.time()
-    print("Graphs loaded in %.2f seconds" % (t1 - t0))
-    merged_graph = merge_graphs(graphs_to_merge)
+    # t1 = time.time()
+    # print("Graphs loaded in %.2f seconds" % (t1 - t0))
+    # merged_graph = merge_graphs(graphs_to_merge)
 
-    with open(args.outfile, "wb") as picklefile:
-        pickle.dump(merged_graph, picklefile)
+    # with open(args.outfile, "wb") as picklefile:
+    #     pickle.dump(merged_graph, picklefile)
 
-    print(
-        "Merged graph has %i(%i) nodes(edges)"
-        % (len(merged_graph.nodes()), len(merged_graph.edges()))
-    )
-    t2 = time.time()
-    print("Graphs merged in %.2f seconds" % (t2 - t1))
+    # print(
+    #     "Merged graph has %i(%i) nodes(edges)"
+    #     % (len(merged_graph.nodes()), len(merged_graph.edges()))
+    # )
+    # t2 = time.time()
+    # print("Graphs merged in %.2f seconds" % (t2 - t1))
+
+
+    graph_files = args.graphs_assembly + [args.graph_alignment]
+
+    merge_streaming(graph_files, args.outfile)
