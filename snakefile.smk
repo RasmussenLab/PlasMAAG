@@ -3,6 +3,7 @@ import collections
 import os
 from pathlib import Path
 import sys
+import itertools
 
 # Set the directory the snakefile exists in. This makes us able to call the pipeline with the relevant src files from other directories.
 THIS_FILE_DIR = Path(workflow.basedir)
@@ -14,7 +15,7 @@ if CONFIG_PATH.exists():
     configfile: CONFIG_PATH
 
 # Define the src directory for the files used in the snakemake workflow
-SRC_DIR = THIS_FILE_DIR / "files_used_in_snakemake_workflow"  
+SRC_DIR = THIS_FILE_DIR / "files_used_in_snakemake_workflow"
 
 # Get the output_directory defined by the user or fallback to current directory, which is the default way snakemake handles output directories
 OUTDIR = Path("") if config.get("output_directory") is None else Path(config.get("output_directory"))
@@ -30,20 +31,20 @@ default_threads = config.get("default_threads", 16)
 default_mem_gb = config.get("default_mem_gb", 50)
 
 # Minimum contig length used
-MIN_CONTIG_LEN = int(config.get("min_contig_len", 2000)) 
+MIN_CONTIG_LEN = int(config.get("min_contig_len", 2000))
 
 # N2V parameters
-N2V_NZ= config.get("n2v_nz", "weight") 
-N2V_ED= config.get("n2v_ed", 32) 
-N2V_WL= config.get("n2v_wl", 10) 
-N2V_NW= config.get("n2v_nw", 50) 
-N2V_WS= config.get("n2v_ws", 10) 
-N2V_P= config.get("n2v_p", 0.1) 
-N2V_Q= config.get("n2v_q", 2.0) 
+N2V_NZ= config.get("n2v_nz", "weight")
+N2V_ED= config.get("n2v_ed", 32)
+N2V_WL= config.get("n2v_wl", 10)
+N2V_NW= config.get("n2v_nw", 50)
+N2V_WS= config.get("n2v_ws", 10)
+N2V_P= config.get("n2v_p", 0.1)
+N2V_Q= config.get("n2v_q", 2.0)
 
 # Binning parameters
-PLAMB_PARAMS = config.get("plamb_params", ' -o C ') 
-PLAMB_PRELOAD = config.get("plamb_preload", "") 
+PLAMB_PARAMS = config.get("plamb_params", ' -o C ')
+PLAMB_PRELOAD = config.get("plamb_preload", "")
 
 # Create opton for user to pass in vamb arguments from CLI. Usefull for easy example on small dataset.
 vamb_arguments = config.get("vamb_arguments", None)
@@ -52,11 +53,11 @@ if vamb_arguments is not None:
 
 # Other options
 CUDA = True if config.get("cuda") ==  "True" else False
-NEIGHS_R=config.get("neighs_r", '0.1') 
+NEIGHS_R=config.get("neighs_r", '0.1')
 MAX_INSERT_SIZE_CIRC = int(config.get("max_insert_size_circ", 50))
 GENOMAD_THR = config.get("genomad_thr", "0.75")
 GENOMAD_THR_CIRC = config.get("genomad_thr_circ", "0.5")
- 
+
 ## ----------- ##
 
 # Assert that input files are actually passed to snakemake
@@ -65,14 +66,14 @@ if config.get("read_file") == None and config.get("read_assembly_dir") == None a
     sys.exit()
 
 # Set default paths for the SPades outputfiles - running the pipeline from allready assembled reads overwrite these values
-contigs =  OUTDIR / "{key}/assembly_mapping_output/spades_{id}/contigs.fasta"
-contigs_paths =  OUTDIR / "{key}/assembly_mapping_output/spades_{id}/contigs.paths"
-assembly_graph = OUTDIR / "{key}/assembly_mapping_output/spades_{id}/assembly_graph_after_simplification.gfa"
+contigs =  OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}/contigs.fasta"
+contigs_paths =  OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}/contigs.paths"
+assembly_graph = OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}/assembly_graph_after_simplification.gfa"
 
 # Set default values for dictonaries containg information about the input information
 # The way snakemake parses snakefiles means we have to define them even though they will always be present
-sample_id = dict()               
-sample_id_path= dict() 
+sample_id = dict()
+sample_id_path= dict()
 sample_id_path_assembly = dict()
 
 # If the read_file is defined the pipeline will also run SPades and assemble the reads
@@ -83,9 +84,9 @@ if config.get("read_file") != None:
     for id, (read1, read2) in enumerate(zip(df.read1, df.read2)):
         id = f"sample{str(id)}"
         # Earlier version of the pipeline could handle passing several samples at the same time which would be processed separatly.
-        # For easier user input this was removed. Therefore the "sample" is always set to the same. 
+        # For easier user input this was removed. Therefore the "sample" is always set to the same.
         # By parsing different sample names from the input this can be implemented again - this is nice eg. for benchmarking
-        sample = "intermidiate_files" 
+        sample = "intermidiate_files"
         sample_id[sample].append(id)
         sample_id_path[sample][id] = [read1, read2]
 
@@ -103,19 +104,22 @@ if config.get("read_assembly_dir") != None:
         sample_id_path_assembly[sample][id] = [assembly]
 
     # Setting the output paths for the user defined SPades files
-    contigs =  lambda wildcards: Path(sample_id_path_assembly[wildcards.key][wildcards.id][0]) / "contigs.fasta"
-    assembly_graph  =  lambda wildcards: Path(sample_id_path_assembly[wildcards.key][wildcards.id][0]) / "assembly_graph_after_simplification.gfa"
-    contigs_paths  =  lambda wildcards: Path(sample_id_path_assembly[wildcards.key][wildcards.id][0]) / "contigs.paths"
+    contigs =  lambda wildcards: Path(sample_id_path_assembly["intermidiate_files"][wildcards.id][0]) / "contigs.fasta"
+    assembly_graph  =  lambda wildcards: Path(sample_id_path_assembly["intermidiate_files"][wildcards.id][0]) / "assembly_graph_after_simplification.gfa"
+    contigs_paths  =  lambda wildcards: Path(sample_id_path_assembly["intermidiate_files"][wildcards.id][0]) / "contigs.paths"
 
-read_fw = lambda wildcards: sample_id_path[wildcards.key][wildcards.id][0]
-read_rv =  lambda wildcards: sample_id_path[wildcards.key][wildcards.id][1]
+read_fw = lambda wildcards: sample_id_path["intermidiate_files"][wildcards.id][0]
+read_rv =  lambda wildcards: sample_id_path["intermidiate_files"][wildcards.id][1]
+
+## Deinfe pairs for paralel alignment 
+SAMPLE_PAIRS = [(a, b) for a, b in itertools.combinations(sample_id["intermidiate_files"], 2)]
 
 # Functions to get the config-defined threads/walltime/mem_gb for a rule and if not defined the default
-threads_fn = lambda rulename: config.get(rulename, {"threads": default_threads}).get("threads", default_threads) 
-walltime_fn  = lambda rulename: config.get(rulename, {"walltime": default_walltime}).get("walltime", default_walltime) 
-mem_gb_fn  = lambda rulename: config.get(rulename, {"mem_gb": default_mem_gb}).get("mem_gb", default_mem_gb) 
+threads_fn = lambda rulename: config.get(rulename, {"threads": default_threads}).get("threads", default_threads)
+walltime_fn  = lambda rulename: config.get(rulename, {"walltime": default_walltime}).get("walltime", default_walltime)
+mem_gb_fn  = lambda rulename: config.get(rulename, {"mem_gb": default_mem_gb}).get("mem_gb", default_mem_gb)
 
-try: 
+try:
     os.makedirs(os.path.join(OUTDIR,'log'), exist_ok=True)
 except FileExistsError:
     pass
@@ -123,38 +127,47 @@ except FileExistsError:
 rulename = "all"
 rule all:
     input:
-        candidate_plasmids = expand(os.path.join(OUTDIR,"{key}",'contrastive_VAE','vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids.tsv'),key=sample_id.keys()),
-        candidate_genomes = expand(os.path.join(OUTDIR,"{key}",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '.tsv'),key=sample_id.keys()), #
-        assert_genomad_finished = expand(os.path.join(OUTDIR,"{key}",'rule_completed_checks/run_geNomad.finished'), key=sample_id.keys()),
-        assert_vamb_finished = expand(os.path.join(OUTDIR, "{key}",'rule_completed_checks/run_contrastive_VAE.finished'), key=sample_id.keys()),
-        candidate_genomes_scores =expand(os.path.join(OUTDIR,"{key}",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_gN_scores.tsv'), key=sample_id.keys()),
-        candidate_plasmids_scores = expand(os.path.join(OUTDIR,"{key}",'contrastive_VAE',f'vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids_gN_scores.tsv'), key=sample_id.keys()),
-        contigs = expand(os.path.join(OUTDIR,"{key}",'assembly_mapping_output','contigs.flt.fna.gz'), key=sample_id.keys())
+        candidate_plasmids = expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids.tsv'),key=sample_id.keys()),
+        candidate_genomes = expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_organisms.tsv'),key=sample_id.keys()), #
+        candidate_virus = expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_virus.tsv'),key=sample_id.keys()), #
+        assert_genomad_finished = expand(os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/run_geNomad.finished'), key=sample_id.keys()),
+        assert_vamb_finished = expand(os.path.join(OUTDIR, "intermidiate_files",'rule_completed_checks/run_contrastive_VAE.finished'), key=sample_id.keys()),
+        candidate_genomes_scores =expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_gN_scores.tsv'), key=sample_id.keys()),
+        candidate_plasmids_scores = expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE',f'vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids_gN_scores.tsv'), key=sample_id.keys()),
+        contigs = expand(os.path.join(OUTDIR,"intermidiate_files",'assembly_mapping_output','contigs.flt.fna.gz'), key=sample_id.keys())
+        
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
     output:
         candidate_plasmids = OUTDIR / "results/candidate_plasmids.tsv",
         candidate_genomes = OUTDIR / "results/candidate_genomes.tsv",
+        candidate_virus = OUTDIR / "results/candidate_virus.tsv",
         combined_scores = OUTDIR / "results/scores.tsv",
         results_dir = directory(OUTDIR / "results/")
     params:
-        path = os.path.join(SRC_DIR, 'write_candidate_bins.py'),
+        path = os.path.join(SRC_DIR, 'write_candidate_bins_virus.py'),
 
-    shell: 
+    shell:
         """
         cat {input.candidate_plasmids} > {output.candidate_plasmids}
         cat {input.candidate_genomes} > {output.candidate_genomes}
+        cat {input.candidate_virus} > {output.candidate_virus}
         # Remove header from one of the files
         tail -n+2  {input.candidate_genomes_scores} | cat {input.candidate_plasmids_scores} - > {output.combined_scores}
         # Write bins from cluster candidates
-        python {params.path} --cls_pl {output.candidate_plasmids} --cls_nonpl {output.candidate_genomes} --contigs {input.contigs} --outdir {output.results_dir}
+        python {params.path} --cls_pl {output.candidate_plasmids} --cls_org {output.candidate_genomes} --cls_vir {output.candidate_virus} --contigs {input.contigs} --outdir {output.results_dir}
         """
 
-# If the genomad database is given as an argument don't download it again
-# This works boths from when the tool is called from the CLI wrapper and from snakemake if the config is extended setting the genomad_database variable
+#If the genomad database is given as an argument don't download it again
+#This works boths from when the tool is called from the CLI wrapper and from snakemake if the config is extended setting the genomad_database variable
 if config.get("genomad_database") is not None:
     geNomad_db = config.get("genomad_database")
-else: 
+else:
     geNomad_db = THIS_FILE_DIR / "genomad_db" / "genomad_db",
 
     rulename = "download_genomad_db"
@@ -176,159 +189,280 @@ else:
 rulename = "spades"
 rule spades:
     input:
-       fw = read_fw, 
-       rv = read_rv, 
+       fw = read_fw,
+       rv = read_rv,
     output:
-       outdir = directory(OUTDIR / "{key}/assembly_mapping_output/spades_{id}"),
-       outfile = OUTDIR / "{key}/assembly_mapping_output/spades_{id}/contigs.fasta",
-       graph = OUTDIR / "{key}/assembly_mapping_output/spades_{id}/assembly_graph_after_simplification.gfa",
-       graphinfo  = OUTDIR / "{key}/assembly_mapping_output/spades_{id}/contigs.paths",
+       #outdir = directory(OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}"),
+       outfile = OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}/contigs.fasta",
+       graph = OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}/assembly_graph_after_simplification.gfa",
+       graphinfo  = OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}/contigs.paths",
+    params: outdir = directory(OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}")
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "{key}_{id}_" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{id}_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
     conda: THIS_FILE_DIR / "envs/spades_env.yaml"
     shell:
        "spades.py --meta "
        "-t {threads} -m 180 "
-       "-o {output.outdir} -1 {input.fw} -2 {input.rv} " 
-       "-t {threads} --memory {resources.mem_gb} &> {log} " 
+       "-o {params.outdir} -1 {input.fw} -2 {input.rv} "
+       "-t {threads} --memory {resources.mem_gb} &> {log.log} "
 
-# Rename the contigs to keep sample information for later use 
+# Rename the contigs to keep sample information for later use
 rulename = "rename_contigs"
 rule rename_contigs:
     input:
         contigs,
     output:
-        OUTDIR / "{key}/assembly_mapping_output/spades_{id}/contigs.renamed.fasta"
-    threads: threads_fn(rulename)
-    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "{key}_{id}_" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{id}_" + rulename
+        OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}/contigs.renamed.fasta"
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
+    threads: 1 #threads_fn(rulename)
+    resources: walltime = walltime_fn(rulename), mem_gb = 16 # mem_gb_fn(rulename)
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
     shell:
         """
-        sed 's/^>/>S{wildcards.id}C/' {input} > {output} 2> {log}
+        sed 's/^>/>S{wildcards.id}C/' {input} > {output} 2> {log.log}
         """
+rulename = "filter_sample_contigs"
+rule filter_sample_contigs:
+    input: OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}/contigs.renamed.fasta",
+    output: OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}/contigs.flt.fna.gz"
+    params: script =  SRC_DIR / "concatenate.py"
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
+    threads: 1 # threads_fn(rulename)
+    resources: walltime = walltime_fn(rulename), mem_gb = 16 #mem_gb_fn(rulename)
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
+    shell:
+        "python {params.script} {output} {input} --keepnames -m {MIN_CONTIG_LEN} &> {log.log} "
+
 
 # Cat the contigs together in one file to later map each pair of reads against all the contigs together
 rulename="cat_contigs"
 rule cat_contigs:
-    input: lambda wildcards: expand(OUTDIR / "{key}/assembly_mapping_output/spades_{id}/contigs.renamed.fasta", key=wildcards.key, id=sample_id[wildcards.key]),
-    output: OUTDIR / "{key}/assembly_mapping_output/contigs.flt.fna.gz"
-    threads: threads_fn(rulename)
+    input: lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{id}/contigs.renamed.fasta", id=sample_id["intermidiate_files"]),
+    output: OUTDIR / "intermidiate_files/assembly_mapping_output/contigs.flt.fna.gz"
     params: script =  SRC_DIR / "concatenate.py"
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files" + rulename
+    threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "{key}" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
-    shell: 
-        "python {params.script} {output} {input} --keepnames -m {MIN_CONTIG_LEN} &> {log} "  
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
+    shell:
+        "python {params.script} {output} {input} --keepnames -m {MIN_CONTIG_LEN} &> {log.log} "
 
 # Extract the contigs names for later use
 rulename = "get_contig_names"
 rule get_contig_names:
     input:
-        OUTDIR / "{key}/assembly_mapping_output/contigs.flt.fna.gz"
-    output: 
-        OUTDIR / "{key}/assembly_mapping_output/contigs.names.sorted"
+        OUTDIR / "intermidiate_files/assembly_mapping_output/contigs.flt.fna.gz"
+    output:
+        OUTDIR / "intermidiate_files/assembly_mapping_output/contigs.names.sorted"
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "{key}_" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
     shell:
-        "zcat {input} | grep '>' | sed 's/>//' > {output} 2> {log} "
+        "zcat {input} | grep '>' | sed 's/>//' > {output} 2> {log.log} "
 
-# Run strobealign to get the abundances  
+# Run strobealign to get the abundances
 rulename = "Strobealign_bam_default"
 rule Strobealign_bam_default:
-        input: 
+        input:
             fw = read_fw,
             rv = read_rv,
-            contig = OUTDIR /"{key}/assembly_mapping_output/contigs.flt.fna.gz",
+            contig = OUTDIR /"intermidiate_files/assembly_mapping_output/contigs.flt.fna.gz",
         output:
-            OUTDIR / "{key}/assembly_mapping_output/mapped/{id}.bam"
+            OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam"
         threads: threads_fn(rulename)
         resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-        benchmark: config.get("benchmark", "benchmark/") + "{key}_{id}_" + rulename
-        log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{id}_" + rulename
+        benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
+        log: 
+            log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename,
+            e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_err",
+            o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
         conda: THIS_FILE_DIR / "envs/strobe_env.yaml"
         shell:
             """
-            strobealign -t {threads} {input.contig} {input.fw} {input.rv} > {output} 2> {log}
+            strobealign -t {threads} {input.contig} {input.fw} {input.rv} > {output} 2> {log.log}
             """
 
 # Sort the bam files and index them
 rulename="sort"
 rule sort:
     input:
-        OUTDIR / "{key}/assembly_mapping_output/mapped/{id}.bam",
+        OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam",
     output:
-        OUTDIR / "{key}/assembly_mapping_output/mapped_sorted/{id}.bam.sort",
+        OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort",
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "{key}_{id}_" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{id}_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
     shell:
         """
-	samtools sort --threads {threads} {input} -o {output} 2> {log}
-	samtools index {output} 2>> {log}
-	"""
+    samtools sort --threads {threads} {input} -o {output} 2> {log.log}
+    samtools index {output} 2>> {log.log}
+    """
 
 ## The next part of the pipeline is composed of the following steps:
-# 0. Look for contigs circularizable 
-# 1. Align contigs all against all 
+# 0. Look for contigs circularizable
+# 1. Align contigs all against all
 # 2. Generate per sample assembly graphs from gfa assembly graphs
 # 3. Generate alignment graph from 1. output
 # 4. Produce assembly-alignment graph from merging assembly graph and alignment graph.
-# 5. Run n2v on the per sample assembly graphs 
+# 5. Run n2v on the per sample assembly graphs
 # 6. Extract neighbourhoods from assembly-alignment graph n2v embeddings
 # 7. Run vamb to merge,split, and expand the hoods
 # 8. Merge graph clusters with circular clusters
 # 9. Run geNomad to get contig plasmid, chromosome, and virus classificaiton scores
 # 10. Classify bins/clusters into plasmid/organism/virus bins/clusters
 
-# 0. Look for contigs circularizable 
+# 0. Look for contigs circularizable
 rulename = "circularize"
 rule circularize:
     input:
-        bamfiles = lambda wildcards: expand(OUTDIR /  "{key}/assembly_mapping_output/mapped_sorted/{id}.bam.sort", key=f"{wildcards.key}", id=sample_id[wildcards.key]),
+        bamfiles = lambda wildcards: expand(OUTDIR /  "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort", id=sample_id["intermidiate_files"]),
     output:
-        os.path.join(OUTDIR,"{key}",'circularisation','max_insert_len_%i_circular_clusters.tsv.txt'%MAX_INSERT_SIZE_CIRC),
-        os.path.join(OUTDIR,"{key}",'rule_completed_checks/circularisation/circularisation.finished')
+        os.path.join(OUTDIR,"intermidiate_files",'circularisation','max_insert_len_%i_circular_clusters.tsv.txt'%MAX_INSERT_SIZE_CIRC),
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/circularisation/circularisation.finished')
     params:
         path = os.path.join(SRC_DIR, 'circularisation.py'),
-        dir_bams = lambda wildcards: expand(OUTDIR / "{key}/assembly_mapping_output/mapped_sorted", key=wildcards.key)
+        dir_bams = OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted"
     threads: threads_fn(rulename),
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "{key}_" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
     shell:
         """
-        python {params.path} --dir_bams {params.dir_bams} --outcls {output[0]} --max_insert {MAX_INSERT_SIZE_CIRC} &> {log}
+        python {params.path} --dir_bams {params.dir_bams} --outcls {output[0]} --max_insert {MAX_INSERT_SIZE_CIRC} &> {log.log}
         touch {output[1]}
-        """        
+        """
 
-# 1. Align contigs all against all
-rulename = "align_contigs"
-rule align_contigs:
+
+# 1. Align contigs pairwise
+rulename = "makeblastdbs"
+rule makeblastdbs:
     input:
-        OUTDIR / "{key}/assembly_mapping_output/contigs.flt.fna.gz",
+        #OUTDIR / "intermidiate_files/assembly_mapping_output/contigs.flt.fna.gz",
+        OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{sampleB}/contigs.flt.fna.gz"
     output:
-        os.path.join(OUTDIR,"{key}",'blastn','blastn_all_against_all.txt'),
-        os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/align_contigs.finished'),
-    params:
-        db_name=os.path.join(OUTDIR, "{key}",'blastn','contigs.db'), # TODO should be made?
-    threads: threads_fn(rulename)
-    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "{key}_" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/sample_pairwise/makeblastdbs_{sampleB}.finished')
+    params: os.path.join(OUTDIR, "intermidiate_files",'blastn','sample_pairwise','contigs_{sampleB}.db') # TODO should be made?
+    threads: threads_fn("align_contigs")
+    resources: walltime = walltime_fn("align_contigs"), mem_gb = mem_gb_fn("align_contigs")
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{sampleB}" + rulename
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{sampleB}" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{sampleB}" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{sampleB}" + rulename+"_out"
     shell:
         """
-        gunzip -c {input} |makeblastdb -in - -dbtype nucl -out {params.db_name} -title contigs.db 2> {log}
-        gunzip -c {input} |blastn -query - -db {params.db_name} -out {output[0]}.redundant -outfmt 6 -perc_identity 95 -num_threads {threads} -max_hsps 1000000 2>> {log}
-        awk '$1 != $2 && $4 >= 500' {output[0]}.redundant > {output[0]} 2>> {log}
+        gunzip -c {input} |makeblastdb -in - -dbtype nucl -out {params} -title contigs_{wildcards.sampleB}.db 2> {log.log}
+        touch {output}
+        """
+
+rulename = "makeblastdbs_all_samples"
+rule makeblastdbs_all_samples:
+    input:
+        lambda wildcards: expand(os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/sample_pairwise/makeblastdbs_{sampleB}.finished'),
+               sampleB=set([b for a, b in SAMPLE_PAIRS])
+               ),
+    output:
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','blastn','makeblastdbs_all_samples.finished')
+    threads: threads_fn("align_contigs")
+    resources: walltime = walltime_fn("align_contigs"), mem_gb = mem_gb_fn("align_contigs")
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
+    shell:
+        """
+        touch {output}
+        """
+
+rulename = "align_contigs_per_sample"
+rule align_contigs_per_sample:
+    input:
+        OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{sampleA}/contigs.flt.fna.gz",
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','blastn','makeblastdbs_all_samples.finished')
+    output:
+        os.path.join(OUTDIR, "intermidiate_files",'blastn','sample_pairwise','blast_{sampleA}_{sampleB}.txt'),
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/sample_pairwise/align_contigs_{sampleA}_{sampleB}.finished')
+    params: os.path.join(OUTDIR, "intermidiate_files",'blastn','sample_pairwise','contigs_{sampleB}.db')
+    threads: threads_fn("align_contigs")
+    resources: walltime = walltime_fn("align_contigs"), mem_gb = mem_gb_fn("align_contigs")
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{sampleA}_{sampleB}_" + rulename
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{sampleA}_{sampleB}_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{sampleA}_{sampleB}_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{sampleA}_{sampleB}_" + rulename+"_out"
+    shell:
+        """
+        gunzip -c {input[0]} |blastn -query - -db {params} -out {output[0]}.redundant -outfmt 6 -perc_identity 95 -num_threads {threads} -max_hsps 1000000 2>> {log.log}
+        awk '$1 != $2 && $4 >= 500' {output[0]}.redundant > {output[0]} 2>> {log.log}
         touch {output[1]}
         """
+
+rulename = "align_all_samples"
+rule align_all_samples:
+    input:
+        blast_outputs_per_sample=lambda wildcards: expand(
+            os.path.join(OUTDIR, "intermidiate_files",'blastn','sample_pairwise','blast_{sampleA}_{sampleB}.txt'),
+            zip,
+            sampleA=[a for a, b in SAMPLE_PAIRS],
+            sampleB=[b for a, b in SAMPLE_PAIRS]
+            ),
+        blast_fins_per_sample=lambda wildcards: expand(
+            os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/sample_pairwise/align_contigs_{sampleA}_{sampleB}.finished'),
+            zip,
+            sampleA=[a for a, b in SAMPLE_PAIRS],
+            sampleB=[b for a, b in SAMPLE_PAIRS]
+            )
+    output:
+        os.path.join(OUTDIR,"intermidiate_files",'blastn','blastn_all_against_all.txt'),
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/align_contigs.finished')
+    threads: threads_fn("align_contigs")
+    resources: walltime = walltime_fn("align_contigs"), mem_gb = mem_gb_fn("align_contigs")
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
+    shell:
+        """
+        # Ensure output exists and is empty
+        mkdir -p "$(dirname {output[0]})"
+        : > "{output[0]}"
+
+        # Concatenate all matching files safely (no ARG_MAX issues)
+        find {OUTDIR}/intermidiate_files/blastn/sample_pairwise \
+        -type f -name 'blast_*.txt' -print0 \
+        | xargs -0 -r cat -- \
+        >> {output[0]} 2>> {log.log}        
         
+        touch {output[1]}
+        """
+
 ## 2. Generate nx graph per sample for graphs from gfa assembly graphs for each "sample"
 rulename = "weighted_assembly_graphs"
 rule weighted_assembly_graphs:
@@ -336,52 +470,44 @@ rule weighted_assembly_graphs:
         graph = assembly_graph,
         graphinfo  = contigs_paths
     output:
-        os.path.join(OUTDIR,"{key}",'assembly_graphs','{id}.pkl'),
-        os.path.join(OUTDIR,"{key}", 'rule_completed_checks','assembly_graph_processing','weighted_assembly_graphs_{id}.finished'),
+        os.path.join(OUTDIR,"intermidiate_files",'assembly_graphs','{id}.pkl'),
+        os.path.join(OUTDIR,"intermidiate_files", 'rule_completed_checks','assembly_graph_processing','weighted_assembly_graphs_{id}.finished'),
     params:
         path = os.path.join(SRC_DIR, 'process_gfa.py'),
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "{key}_{id}_" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_{id}_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
     shell:
         """
-        python {params.path} --gfa {input[0]} --paths {input[1]} -s {wildcards.id} -m {MIN_CONTIG_LEN}  --out {output[0]} &> {log} \
+        python {params.path} --gfa {input[0]} --paths {input[1]} -s {wildcards.id} -m {MIN_CONTIG_LEN}  --out {output[0]} &> {log.log} \
         && touch {output[1]}
-        """
-
-rulename = "weighted_assembly_graphs_all_samples"
-rule weighted_assembly_graphs_all_samples:
-    input: lambda wildcards: expand(os.path.join(OUTDIR,"{key}",'assembly_graphs','{id}.pkl'),key=wildcards.key, id=sample_id[wildcards.key]),
-    output:
-        os.path.join(OUTDIR,"{key}",'rule_completed_checks','assembly_graph_processing','weighted_assembly_graphs_all_samples.finished')
-    threads: threads_fn(rulename)
-    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "{key}_" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
-    shell:
-        """
-        touch {output}
         """
 
 # 3. Genereate nx graph from the alignment graph
 rulename = "weighted_alignment_graph"
 rule weighted_alignment_graph:
     input:
-        os.path.join(OUTDIR,"{key}",'blastn','blastn_all_against_all.txt'),
-        os.path.join(OUTDIR,"{key}",'rule_completed_checks/blastn/align_contigs.finished')
+        os.path.join(OUTDIR,"intermidiate_files",'blastn','blastn_all_against_all.txt'),
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/align_contigs.finished')
     output:
-        os.path.join(OUTDIR,"{key}",'alignment_graph','alignment_graph.pkl'),
-        os.path.join(OUTDIR,"{key}",'rule_completed_checks','alignment_graph_processing','weighted_alignment_graph.finished')
+        os.path.join(OUTDIR,"intermidiate_files",'alignment_graph','alignment_graph.pkl'),
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','alignment_graph_processing','weighted_alignment_graph.finished')
     params:
         path = os.path.join(SRC_DIR, 'process_blastout.py'),
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "{key}_" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
     shell:
         """
-        python {params.path} --blastout {input[0]} --out {output[0]} --minid 98 &> {log}
+        python {params.path} --blastout {input[0]} --out {output[0]} --minid 98 &> {log.log}
         touch {output[1]}
         """
 
@@ -389,22 +515,25 @@ rule weighted_alignment_graph:
 rulename = "create_assembly_alignment_graph"
 rule create_assembly_alignment_graph:
     input:
-        alignment_graph_file = os.path.join(OUTDIR,"{key}",'alignment_graph','alignment_graph.pkl'),
-        assembly_graph_files = lambda wildcards: expand(os.path.join(OUTDIR,"{key}",'assembly_graphs','{id}.pkl'), key=wildcards.key, id=sample_id[wildcards.key]),
-        weighted_alignment_graph_finished_log = os.path.join(OUTDIR,"{key}",'rule_completed_checks','alignment_graph_processing','weighted_alignment_graph.finished'),
-        weighted_assembly_graphs_all_samples_finished_log = os.path.join(OUTDIR,"{key}", 'rule_completed_checks','assembly_graph_processing','weighted_assembly_graphs_all_samples.finished')
+        assembly_graph_files = expand(os.path.join(OUTDIR,"intermidiate_files",'assembly_graphs','{id}.pkl'), id=sample_id["intermidiate_files"]),
+        alignment_graph_file = os.path.join(OUTDIR,"intermidiate_files",'alignment_graph','alignment_graph.pkl'),
+        weighted_alignment_graph_finished_log = os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','alignment_graph_processing','weighted_alignment_graph.finished'),
+        weighted_assembly_graphs_all_samples_finished_log = expand(os.path.join(OUTDIR,"intermidiate_files", 'rule_completed_checks','assembly_graph_processing','weighted_assembly_graphs_{id}.finished'), id=sample_id["intermidiate_files"]),
     output:
-        os.path.join(OUTDIR,"{key}",'assembly_alignment_graph.pkl'),
-        os.path.join(OUTDIR,"{key}", 'rule_completed_checks','create_assembly_alignment_graph.finished')
+        os.path.join(OUTDIR,"intermidiate_files",'assembly_alignment_graph.pkl'),
+        os.path.join(OUTDIR,"intermidiate_files", 'rule_completed_checks','create_assembly_alignment_graph.finished')
     params:
         path = os.path.join(SRC_DIR, 'merge_assembly_alignment_graphs.py'),
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "{key}_" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
     shell:
         """
-        python {params.path} --graph_alignment {input.alignment_graph_file}  --graphs_assembly {input.assembly_graph_files} --out {output[0]}  &> {log}
+        python {params.path} --graph_alignment {input.alignment_graph_file}  --graphs_assembly {input.assembly_graph_files} --out {output[0]}  &> {log.log}
         touch {output[1]}
         """
 
@@ -412,25 +541,28 @@ rule create_assembly_alignment_graph:
 rulename = "n2v_assembly_alignment_graph"
 rule n2v_assembly_alignment_graph:
     input:
-        os.path.join(OUTDIR,"{key}",'assembly_alignment_graph.pkl'),
-        os.path.join(OUTDIR,"{key}",'rule_completed_checks','create_assembly_alignment_graph.finished'), 
-        contig_names_file = OUTDIR / "{key}/assembly_mapping_output/contigs.names.sorted"
+        os.path.join(OUTDIR,"intermidiate_files",'assembly_alignment_graph.pkl'),
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','create_assembly_alignment_graph.finished'),
+        contig_names_file = OUTDIR / "intermidiate_files/assembly_mapping_output/contigs.names.sorted"
     output:
-        directory(os.path.join(OUTDIR,"{key}",'n2v','assembly_alignment_graph_embeddings')),
-        os.path.join(OUTDIR,"{key}",'n2v','assembly_alignment_graph_embeddings','embeddings.npz'),
-        os.path.join(OUTDIR,"{key}",'n2v','assembly_alignment_graph_embeddings','contigs_embedded.txt'),
-        os.path.join(OUTDIR,"{key}",'rule_completed_checks','n2v','n2v_assembly_alignment_graph.finished')
+        directory(os.path.join(OUTDIR,"intermidiate_files",'n2v','assembly_alignment_graph_embeddings')),
+        os.path.join(OUTDIR,"intermidiate_files",'n2v','assembly_alignment_graph_embeddings','embeddings.npz'),
+        os.path.join(OUTDIR,"intermidiate_files",'n2v','assembly_alignment_graph_embeddings','contigs_embedded.txt'),
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','n2v','n2v_assembly_alignment_graph.finished')
     params:
         path = os.path.join(SRC_DIR, 'fastnode2vec_args.py'),
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "{key}_" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
     conda: THIS_FILE_DIR / "envs/node2vec.yaml"
     shell:
         """
         python {params.path} -G {input[0]} --ed {N2V_ED} --nw {N2V_NW} --ws {N2V_WS} --wl {N2V_WL}\
-         -p {N2V_P} -q {N2V_Q} --outdirembs {output[0]} --normE {N2V_NZ} --contignames {input.contig_names_file} &> {log}
+         -p {N2V_P} -q {N2V_Q} --outdirembs {output[0]} --normE {N2V_NZ} --contignames {input.contig_names_file} &> {log.log}
         touch {output[3]}
         """
 
@@ -438,25 +570,28 @@ rule n2v_assembly_alignment_graph:
 rulename = "extract_neighs_from_n2v_embeddings"
 rule extract_neighs_from_n2v_embeddings:
     input:
-        os.path.join(OUTDIR,"{key}",'n2v','assembly_alignment_graph_embeddings','embeddings.npz'),
-        os.path.join(OUTDIR,"{key}",'n2v','assembly_alignment_graph_embeddings','contigs_embedded.txt'),
-        os.path.join(OUTDIR,"{key}",'rule_completed_checks','n2v','n2v_assembly_alignment_graph.finished'),
-        os.path.join(OUTDIR,"{key}",'assembly_alignment_graph.pkl'),
-        contig_names_file = OUTDIR / "{key}/assembly_mapping_output/contigs.names.sorted"
+        os.path.join(OUTDIR,"intermidiate_files",'n2v','assembly_alignment_graph_embeddings','embeddings.npz'),
+        os.path.join(OUTDIR,"intermidiate_files",'n2v','assembly_alignment_graph_embeddings','contigs_embedded.txt'),
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','n2v','n2v_assembly_alignment_graph.finished'),
+        os.path.join(OUTDIR,"intermidiate_files",'assembly_alignment_graph.pkl'),
+        contig_names_file = OUTDIR / "intermidiate_files/assembly_mapping_output/contigs.names.sorted"
     output:
-        directory(os.path.join(OUTDIR,"{key}",'neighs')),
-        os.path.join(OUTDIR,"{key}",'neighs','neighs_intraonly_rm_object_r_%s.npz'%NEIGHS_R),
-        os.path.join(OUTDIR,"{key}",'rule_completed_checks','neighs','extract_neighs_from_n2v_embeddings.finished')
+        directory(os.path.join(OUTDIR,"intermidiate_files",'neighs')),
+        os.path.join(OUTDIR,"intermidiate_files",'neighs','neighs_intraonly_rm_object_r_%s.npz'%NEIGHS_R),
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','neighs','extract_neighs_from_n2v_embeddings.finished')
     params:
         path = os.path.join(SRC_DIR, 'embeddings_to_neighs.py'),
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "{key}_" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
     shell:
         """
         python {params.path} --embs {input[0]} --contigs_embs {input[1]}\
-         --contignames {input.contig_names_file} -g {input[3]} -r {NEIGHS_R} --neighs_outdir {output[0]} &> {log}
+         --contignames {input.contig_names_file} -g {input[3]} -r {NEIGHS_R} --neighs_outdir {output[0]} &> {log.log}
         touch {output[2]}
         """
 
@@ -464,29 +599,32 @@ rule extract_neighs_from_n2v_embeddings:
 rulename = "run_contrastive_VAE"
 rule run_contrastive_VAE:
     input:
-        notused = os.path.join(OUTDIR,"{key}",'rule_completed_checks','neighs','extract_neighs_from_n2v_embeddings.finished'), # TODO why is this not used?
-        contigs = OUTDIR /  "{key}/assembly_mapping_output/contigs.flt.fna.gz",
-        bamfiles = lambda wildcards: expand(OUTDIR / "{key}/assembly_mapping_output/mapped_sorted/{id}.bam.sort", key=wildcards.key, id=sample_id[wildcards.key]),
-        nb_file = os.path.join(OUTDIR,"{key}",'neighs','neighs_intraonly_rm_object_r_%s.npz'%NEIGHS_R)
+        notused = os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','neighs','extract_neighs_from_n2v_embeddings.finished'), # TODO why is this not used?
+        contigs = OUTDIR /  "intermidiate_files/assembly_mapping_output/contigs.flt.fna.gz",
+        bamfiles = lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort", id=sample_id["intermidiate_files"]),
+        nb_file = os.path.join(OUTDIR,"intermidiate_files",'neighs','neighs_intraonly_rm_object_r_%s.npz'%NEIGHS_R)
     output:
-        directory = directory(os.path.join(OUTDIR,"{key}", 'contrastive_VAE')),
-        finished = os.path.join(OUTDIR,"{key}",'rule_completed_checks/run_contrastive_VAE.finished'),
-        lengths = os.path.join(OUTDIR,"{key}",'contrastive_VAE','lengths.npz'),
-        vae_clusters = os.path.join(OUTDIR, '{key}','contrastive_VAE/vae_clusters_community_based_complete_unsplit.tsv'),
-        compo = os.path.join(OUTDIR, '{key}','contrastive_VAE/composition.npz'),
+        directory = directory(os.path.join(OUTDIR,"intermidiate_files", 'contrastive_VAE')),
+        finished = os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/run_contrastive_VAE.finished'),
+        lengths = os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','lengths.npz'),
+        vae_clusters = os.path.join(OUTDIR, 'intermidiate_files','contrastive_VAE/vae_clusters_community_based_complete_unsplit.tsv'),
+        compo = os.path.join(OUTDIR, 'intermidiate_files','contrastive_VAE/composition.npz'),
     params:
         cuda='--cuda' if CUDA else ''
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "{key}_" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
     shell:
         """
         rmdir {output.directory}
         {PLAMB_PRELOAD}
         vamb bin contr_vamb --outdir {output.directory} --fasta {input.contigs} -p {threads} --bamfiles {input.bamfiles}\
         --neighs {input.nb_file}  -m {MIN_CONTIG_LEN} {PLAMB_PARAMS}\
-         {params.cuda} &> {log}
+         {params.cuda} &> {log.log}
         touch {output.finished}
         """
 
@@ -495,43 +633,48 @@ rule run_contrastive_VAE:
 rulename = "merge_circular_with_graph_clusters"
 rule merge_circular_with_graph_clusters:
     input:
-        os.path.join(OUTDIR,"{key}",'rule_completed_checks/run_contrastive_VAE.finished'),
-        os.path.join(OUTDIR,"{key}",'rule_completed_checks/circularisation/circularisation.finished'),
-        os.path.join(OUTDIR,"{key}",'circularisation','max_insert_len_%i_circular_clusters.tsv.txt'%MAX_INSERT_SIZE_CIRC),
-        vae_clusters = os.path.join(OUTDIR, '{key}','contrastive_VAE/vae_clusters_community_based_complete_unsplit.tsv')
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/run_contrastive_VAE.finished'),
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/circularisation/circularisation.finished'),
+        os.path.join(OUTDIR,"intermidiate_files",'circularisation','max_insert_len_%i_circular_clusters.tsv.txt'%MAX_INSERT_SIZE_CIRC),
+        vae_clusters = os.path.join(OUTDIR, 'intermidiate_files','contrastive_VAE/vae_clusters_community_based_complete_unsplit.tsv')
     output:
-        os.path.join(OUTDIR,'{key}','contrastive_VAE','vae_clusters_community_based_complete_and_circular_unsplit.tsv'),
-        os.path.join(OUTDIR,"{key}",'rule_completed_checks/merge_circular_with_graph_clusters.finished')
+        os.path.join(OUTDIR,'intermidiate_files','contrastive_VAE','vae_clusters_community_based_complete_and_circular_unsplit.tsv'),
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/merge_circular_with_graph_clusters.finished')
     params:
         path=os.path.join(SRC_DIR, 'merge_circular_plamb_clusters.py'),
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "{key}_" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
     shell:
         """
-        python {params.path} --cls_plamb {input.vae_clusters} --cls_circular {input[2]} --outcls {output[0]} &> {log}
+        python {params.path} --cls_plamb {input.vae_clusters} --cls_circular {input[2]} --outcls {output[0]} &> {log.log}
         touch {output[1]}
         """
-
 # 9. Run geNomad to get contig plasmid, chromosome, and virus classificaiton scores
 rulename = "run_geNomad"
 rule run_geNomad:
     input:
-        contigs = OUTDIR / "{key}/assembly_mapping_output/contigs.flt.fna.gz",
+        contigs = OUTDIR / "intermidiate_files/assembly_mapping_output/contigs.flt.fna.gz",
         geNomad_db = geNomad_db
     output:
-        directory(os.path.join(OUTDIR,"{key}",'geNomad')),
-        os.path.join(OUTDIR,"{key}",'rule_completed_checks/run_geNomad.finished'),
-        os.path.join(OUTDIR,"{key}",'geNomad','contigs.flt_aggregated_classification','contigs.flt_aggregated_classification.tsv')
+        directory(os.path.join(OUTDIR,"intermidiate_files",'geNomad')),
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/run_geNomad.finished'),
+        os.path.join(OUTDIR,"intermidiate_files",'geNomad','contigs.flt_aggregated_classification','contigs.flt_aggregated_classification.tsv')
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "{key}_" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
     conda: THIS_FILE_DIR / "envs/genomad.yaml"
     shell:
         """
-        genomad end-to-end --cleanup {input.contigs} {output[0]} {input.geNomad_db} --threads {threads} &> {log}
+        genomad end-to-end --cleanup {input.contigs} {output[0]} {input.geNomad_db} --threads {threads} &> {log.log}
         touch {output[1]}
         """
 
@@ -539,29 +682,33 @@ rule run_geNomad:
 rulename = "classify_bins_with_geNomad"
 rule classify_bins_with_geNomad:
     input:
-        os.path.join(OUTDIR,"{key}",'geNomad','contigs.flt_aggregated_classification','contigs.flt_aggregated_classification.tsv'),
-        os.path.join(OUTDIR,"{key}",'rule_completed_checks/run_contrastive_VAE.finished'),
-        os.path.join(OUTDIR,"{key}",'rule_completed_checks/run_geNomad.finished'),
-        contignames = OUTDIR / "{key}/assembly_mapping_output/contigs.names.sorted",
-        lengths = os.path.join(OUTDIR,"{key}",'contrastive_VAE','lengths.npz'),
-        comm_clusters = os.path.join(OUTDIR,'{key}','contrastive_VAE','vae_clusters_community_based_complete_and_circular_unsplit.tsv'),
-        composition = os.path.join(OUTDIR,'{key}','contrastive_VAE','composition.npz'),
+        os.path.join(OUTDIR,"intermidiate_files",'geNomad','contigs.flt_aggregated_classification','contigs.flt_aggregated_classification.tsv'),
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/run_contrastive_VAE.finished'),
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/run_geNomad.finished'),
+        contignames = OUTDIR / "intermidiate_files/assembly_mapping_output/contigs.names.sorted",
+        lengths = os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','lengths.npz'),
+        comm_clusters = os.path.join(OUTDIR,'intermidiate_files','contrastive_VAE','vae_clusters_community_based_complete_and_circular_unsplit.tsv'),
+        composition = os.path.join(OUTDIR,'intermidiate_files','contrastive_VAE','composition.npz'),
     output:
-        os.path.join(OUTDIR,"{key}",'contrastive_VAE',f'vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids.tsv'),
-        os.path.join(OUTDIR,"{key}",'rule_completed_checks','classify_bins_with_geNomad.finished'),
-        candidate_genomes =os.path.join(OUTDIR,"{key}",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '.tsv'),
-        candidate_genomes_scores =os.path.join(OUTDIR,"{key}",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_gN_scores.tsv'),
-        candidate_plasmids_scores = os.path.join(OUTDIR,"{key}",'contrastive_VAE',f'vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids_gN_scores.tsv'),
+        os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE',f'vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids.tsv'),
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','classify_bins_with_geNomad.finished'),
+        candidate_genomes =os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_organisms.tsv'),
+        candidate_virus =os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_virus.tsv'),
+        candidate_genomes_scores =os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_gN_scores.tsv'),
+        candidate_plasmids_scores = os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE',f'vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids_gN_scores.tsv'),
     params:
-        path = os.path.join(SRC_DIR, 'classify_bins_with_geNomad.py'),
+        path = os.path.join(SRC_DIR, 'classify_bins_with_geNomad_vir.py'),
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", "benchmark/") + "{key}_" + rulename
-    log: config.get("log", f"{str(OUTDIR)}/log/") + "{key}_" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
     shell:
         """
         python {params.path} --clusters {input.comm_clusters} \
-         --dflt_cls {OUTDIR}/{wildcards.key}/contrastive_VAE/vae_clusters_density_unsplit.tsv --scores {input[0]} --outp {output[0]} \
-         --composition {input.composition} --thr {GENOMAD_THR} --thr_circ {GENOMAD_THR_CIRC} &> {log}
+         --dflt_cls {OUTDIR}/intermidiate_files/contrastive_VAE/vae_clusters_density_unsplit.tsv --scores {input[0]} --outp {output[0]} \
+         --composition {input.composition} --thr {GENOMAD_THR} --thr_circ {GENOMAD_THR_CIRC} &> {log.log}
         touch {output[1]}
         """
