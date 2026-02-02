@@ -35,53 +35,25 @@ default_mem_gb: 50
 ## Specific rule resources
 # Below is the specific resources defined for the various rules in the pipeline 
 # If no specific resources are defined for a rule, the default will be used instead.
-rename_contigs:
-  threads: 1
-  default_mem_gb: 4
-
-filter_sample_contigs:
-  threads: 1
-  default_mem_gb: 4
-
-cat_contigs:
-  threads: 1
-  default_mem_gb: 4
-
-get_contig_names:
-  threads: 1
-  default_mem_gb: 4
-
-samtools_sort:
-  threads: 4
-  default_mem_gb: 20
-
-circularize:
-  threads: 1
-  default_mem_gb: 4
-
-weighted_assembly_graphs:
-  threads: 1
-  default_mem_gb: 4
-
-weighted_alignment_graph:
-  threads: 1
-  default_mem_gb: 4
-
-create_assembly_alignment_graph:
-  threads: 1
-  default_mem_gb: 40
-
 spades:
   threads: 10
   mem_gb: 180
 
-extract_neighs_from_n2v_embeddings:
-  threads: 10
-  mem_gb: 180
+rename_contigs:
+  threads: 1
+  mem_gb: 4
 
-index:
-  threads: 8
-  mem_gb: 120
+filter_sample_contigs:
+  threads: 1
+  mem_gb: 4
+
+cat_contigs:
+  threads: 1
+  mem_gb: 4
+
+get_contig_names:
+  threads: 1
+  mem_gb: 4
 
 Strobealign_bam_default:
   threads: 10
@@ -91,18 +63,62 @@ sort:
   threads: 8
   mem_gb: 120
 
-align_contigs:
-  threads: 4
-  mem_gb: 16
+circularize:
+  threads: 1
+  mem_gb: 4
 
-run_geNomad:
-  threads: 40
-  mem_gb: 245
+makeblastdbs:
+  threads: 1
+  mem_gb: 8
+
+makeblastdbs_all_samples:
+  threads: 1
+  mem_gb: 8
+
+align_contigs_per_sample:
+  threads: 2
+  mem_gb: 8
+
+align_all_samples:
+  threads: 1
+  mem_gb: 24
+
+weighted_assembly_graphs:
+  threads: 1
+  mem_gb: 12
+
+weighted_alignment_graph:
+  threads: 1
+  mem_gb: 12
+
+create_assembly_alignment_graph:
+  threads: 1
+  mem_gb: 40
+
+n2v_assembly_alignment_graph:
+  threads: 8
+  mem_gb: 40
+
+extract_neighs_from_n2v_embeddings:
+  threads: 10
+  mem_gb: 180
 
 run_contrastive_VAE:
   threads: 40
   mem_gb: 180
 
+merge_circular_with_graph_clusters:
+  threads: 1
+  mem_gb: 8
+
+run_geNomad:
+  threads: 40
+  mem_gb: 245
+
+classify_bins_with_geNomad:
+  threads: 1
+  mem_gb: 12
+
 rule all:
   threads: 1
-  default_mem_gb: 4
+  default_mem_gb: 16
