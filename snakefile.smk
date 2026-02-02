@@ -277,7 +277,7 @@ rule get_contig_names:
         e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
         o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
     shell:
-        "gunzip -dc {input} | grep '>' | sed 's/>//' > {output} 2> {log} "
+        "gunzip -dc {input} | grep '>' | sed 's/>//' > {output} 2> {log.log} "
 
 # Run strobealign to get the abundances
 rulename = "Strobealign_bam_default"
