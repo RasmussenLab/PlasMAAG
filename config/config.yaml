@@ -57,11 +57,11 @@ get_contig_names:
 
 Strobealign_bam_default:
   threads: 10
-  mem_gb: 245
+  mem_gb: 160
 
 sort:
   threads: 8
-  mem_gb: 120
+  mem_gb: 64
 
 circularize:
   threads: 1
@@ -113,7 +113,7 @@ merge_circular_with_graph_clusters:
 
 run_geNomad:
   threads: 40
-  mem_gb: 245
+  mem_gb: 180
 
 classify_bins_with_geNomad:
   threads: 1
