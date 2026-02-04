@@ -154,6 +154,10 @@ def graph_from_blastout(
                     + identity * extended_alig_len
                 ) / (alig_len)
                 cc_blast_g[ci][cj]["al_len"] = alig_len
+
+                # cc_blast_g[ci][cj]["al_ranges_%s" % ci] = merged_ranges_q
+                # cc_blast_g[ci][cj]["al_ranges_%s" % cj] = merged_ranges_s
+
                 weight = (
                     cc_blast_g[ci][cj]["identity"]
                     * (
