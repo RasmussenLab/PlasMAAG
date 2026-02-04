@@ -13,6 +13,7 @@ def graph_from_blastout(
     min_al,
     restrictive_alignments,
     separator,
+    intra_sample_matches_allowed
 ):
     """
     Given a blastfile that contains blast output between contigs,
@@ -23,6 +24,9 @@ def graph_from_blastout(
     """
     if not restrictive_alignments:
         print("Allowing non restrictive alignments")
+
+    if intra_sample_matches_allowed:
+        print("Allowing alignments from the same samples")
 
     def valid_alignment(c_q_len, c_s_len, q_s, q_e, s_s, s_e):
         """
@@ -68,7 +72,7 @@ def graph_from_blastout(
         # assert ci != cj:
 
         if (
-            ci.split(separator)[0] == cj.split(separator)[0]
+            (ci.split(separator)[0] == cj.split(separator)[0]) and not intra_sample_matches_allowed
         ):  ## continue if matches from the same sample
             continue
 
@@ -219,7 +223,12 @@ if __name__ == "__main__":
         default="C",
         help="Separator that indicates the end of the sample name and the beggining of the contig name [C].",
     )
-
+    parser.add_argument(
+        "--intra_sample_matches_allowed",
+        action="store_true",
+        help="if set, alignment graph will also contain edges from contigs from the same sample",
+    )
+    
     # Parse the arguments
     args = parser.parse_args()
     print(args)
@@ -236,6 +245,7 @@ if __name__ == "__main__":
                 min_al=args.min_al_len,
                 restrictive_alignments=True if not args.non_restrictive else False,
                 separator=args.separator,
+                intra_sample_matches_allowed= False if not args.intra_sample_matches_allowed else True
             ),
             pkl,
         )
