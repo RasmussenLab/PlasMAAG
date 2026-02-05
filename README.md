@@ -11,7 +11,7 @@ From FASTQ read files the tool will output:
 
 _If you don't want PlasMAAG to assemble the reads, you can also pass in the paths to the asssemblies._
 
-See the preprint for more information: ["Accurate plasmid reconstruction from metagenomics data using assembly-alignment graphs and contrastive learning"](https://www.biorxiv.org/content/10.1101/2025.02.26.640269v2.abstract)
+See the paper in Nature Biotechnolgy for more information: ["Accurate plasmid reconstruction from metagenomics data using assembly-alignment graphs and contrastive learning"](https://www.nature.com/articles/s41587-026-03005-7)
 
 
 ## Quick Start :rocket:
@@ -59,6 +59,8 @@ The path to the SPAdes output directory (under the assembly_dir column in the ab
 | The assembled contigs               | `contigs.fasta`                         |
 | The simplified assembly graphs      | `assembly_graph_after_simplification.gfa` |
 | A metadata file                     | `contigs.paths`                         |
+
+At the moment, PlasMAAG only supports SPAdes, but we are looking into adding support for other assemblers (e.g., Megahit).  
 
 To see all options for the program run `PlasMAAG --help`
 
