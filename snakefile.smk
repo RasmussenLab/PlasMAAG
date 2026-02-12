@@ -311,9 +311,10 @@ def get_chunk_ids(wildcards):
     # Make deterministic order, so "upper triangle" is stable
     return sorted(ids)
 
-def get_chunk_pairs(wildcards):
-    ids = get_chunk_ids(wildcards)
-    return list(itertools.combinations(ids, 2))  # upper triangle (a<b)
+
+def get_chunk_pairs_upper_with_diag(wc):
+    ids = get_chunk_ids(wc)          # must return a sorted list of chunk ids, e.g. ['0001','0002',...]
+    return [(a, b) for i, a in enumerate(ids) for b in ids[i:]]  # a <= b
 
 def get_B_ids(wildcards):
     pairs = get_chunk_pairs(wildcards)
@@ -450,7 +451,7 @@ rule makeblastdbs_all_chunks:
                 "chunk_pairwise",
                 "makeblastdb_chunk_{id}.finished",
             ),
-            id=get_B_ids(wildcards),
+            id=get_chunk_ids(wildcards),
         )
     output:
         os.path.join(
@@ -563,7 +564,7 @@ rule align_all_chunks:
                 "chunk_pairwise",
                 f"blast_{a}_{b}.txt"
             )
-            for a, b in get_chunk_pairs(wildcards)
+            for a, b in get_chunk_pairs_upper_with_diag(wildcards)
         ],
         # Finished marker files
         lambda wildcards: [
@@ -573,7 +574,7 @@ rule align_all_chunks:
                 "rule_completed_checks/blastn/chunk_pairwise",
                 f"align_contigs_{a}_{b}.finished"
             )
-            for a, b in get_chunk_pairs(wildcards)
+            for a, b in get_chunk_pairs_upper_with_diag(wildcards)
         ]
     output:
         os.path.join(OUTDIR, "intermidiate_files", "blastn", "blastn_all_against_all.txt"),
