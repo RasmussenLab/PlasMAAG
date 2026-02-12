@@ -484,41 +484,49 @@ rule align_contigs_per_chunk:
 rulename = "align_all_chunks"
 rule align_all_chunks:
     input:
-        lambda wildcards: [
-            os.path.join(OUTDIR, "intermidiate_files",'blastn','chunk_pairwise','blast_{a}_{b}.txt')
-            for (a, b) in get_chunk_pairs(wildcards)
-            ],
+        # BLAST output files
         lambda wildcards: [
             os.path.join(
-                            OUTDIR,
-                            "intermidiate_files",
-                            "rule_completed_checks/blastn/chunk_pairwise",
-                            f"align_contigs_{a}_{b}.finished"
-            ),
-            for (a, b) in get_chunk_pairs(wildcards)
-            ]
+                OUTDIR,
+                "intermidiate_files",
+                "blastn",
+                "chunk_pairwise",
+                f"blast_{a}_{b}.txt"
+            )
+            for a, b in get_chunk_pairs(wildcards)
+        ],
+        # Finished marker files
+        lambda wildcards: [
+            os.path.join(
+                OUTDIR,
+                "intermidiate_files",
+                "rule_completed_checks/blastn/chunk_pairwise",
+                f"align_contigs_{a}_{b}.finished"
+            )
+            for a, b in get_chunk_pairs(wildcards)
+        ]
     output:
-        os.path.join(OUTDIR,"intermidiate_files",'blastn','blastn_all_against_all.txt'),
-        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/align_contigs.finished')
+        os.path.join(OUTDIR, "intermidiate_files", "blastn", "blastn_all_against_all.txt"),
+        os.path.join(OUTDIR, "intermidiate_files", "rule_completed_checks/blastn/align_contigs.finished")
     threads: threads_fn(rulename)
-    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
-    log: 
-        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
-        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
-        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
+    resources:
+        walltime = walltime_fn(rulename),
+        mem_gb = mem_gb_fn(rulename)
+    benchmark:
+        config.get("benchmark", f"{OUTDIR}/benchmark/") + "intermidiate_files_" + rulename
+    log:
+        log = config.get("log", f"{OUTDIR}/log/") + "intermidiate_files_" + rulename,
+        e   = config.get("log", f"{OUTDIR}/log/") + "intermidiate_files_" + rulename + "_err",
+        o   = config.get("log", f"{OUTDIR}/log/") + "intermidiate_files_" + rulename + "_out"
     shell:
         """
-        # Ensure output exists and is empty
         mkdir -p "$(dirname {output[0]})"
         : > "{output[0]}"
 
-        # Concatenate all matching files safely (no ARG_MAX issues)
         find {OUTDIR}/intermidiate_files/blastn/chunk_pairwise \
-        -type f -name 'blast_*.txt' -print0 \
-        | xargs -0 -r cat -- \
-        >> {output[0]} 2>> {log.log}        
-        
+            -type f -name 'blast_*.txt' -print0 \
+        | xargs -0 -r cat -- >> {output[0]} 2>> {log.log}
+
         touch {output[1]}
         """
 
