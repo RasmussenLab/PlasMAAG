@@ -285,23 +285,24 @@ checkpoint chunk_contigs:
         e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
         o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
     shell:
-        """
+        r"""
         mkdir -p {output[0]}
+
         gunzip -c {input} | \
         awk -v prefix="{params}" -v chunk_size=100000 '
-        /^>/ {
-            if (count % chunk_size == 0) {
+        /^>/ {{
+            if (count % chunk_size == 0) {{
                 if (out) close(out)
                 chunk = sprintf("%s%04d.flt.fna", prefix, ++file_id)
                 out = "gzip > " chunk ".gz"
-            }
+            }}
             count++
-        }
-        { print | out }
-        ' 2> {log.log} 
+        }}
+        {{ print | out }}
+        ' 2> {log.log}
+
         touch {output[1]}
         """
-
 
 def get_chunk_ids(wildcards):
     ck = checkpoints.chunk_contigs.get(**wildcards)   # wait until chunking finished
@@ -460,27 +461,58 @@ rule makeblastdbs_all_chunks:
 rulename = "align_contigs_per_chunk"
 rule align_contigs_per_chunk:
     input:
-        lambda wildcards: os.path.join(CHUNK_DIR, f"contigs_chunk_{wildcards.a}.flt.fna.gz"),
-        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','blastn','makeblastdbs_all_chunks.finished')
+        # query FASTA for chunk a
+        lambda wildcards: os.path.join(
+            CHUNK_DIR, f"contigs_chunk_{wildcards.a}.flt.fna.gz"
+        ),
+        # ensure all DBs are built
+        os.path.join(
+            OUTDIR, "intermidiate_files", "rule_completed_checks",
+            "blastn", "makeblastdbs_all_chunks.finished"
+        )
     output:
-        os.path.join(OUTDIR, "intermidiate_files",'blastn','chunk_pairwise','blast_{a}_{b}.txt'),
-        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/chunk_pairwise/align_contigs_{a}_{b}.finished')
-    params: 
-        db = lambda wildcards: os.path.join(OUTDIR, "intermidiate_files",'blastn','chunk_pairwise','contigs_chunk_{wildcards.b}.db')
+        os.path.join(
+            OUTDIR, "intermidiate_files", "blastn", "chunk_pairwise",
+            "blast_{a}_{b}.txt"
+        ),
+        os.path.join(
+            OUTDIR, "intermidiate_files",
+            "rule_completed_checks/blastn/chunk_pairwise",
+            "align_contigs_{a}_{b}.finished"
+        )
+    params:
+        db=lambda wildcards: os.path.join(
+            OUTDIR, "intermidiate_files", "blastn", "chunk_pairwise",
+            f"contigs_chunk_{wildcards.b}.db"
+        )
     threads: threads_fn(rulename)
-    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{a}_{b}_" + rulename
-    log: 
-        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{a}_{b}_" + rulename,
-        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{a}_{b}_" + rulename+"_err",
-        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{a}_{b}_" + rulename+"_out"
+    resources:
+        walltime = walltime_fn(rulename),
+        mem_gb = mem_gb_fn(rulename)
+    benchmark:
+        config.get("benchmark", f"{OUTDIR}/benchmark/") +
+        f"intermidiate_files_{wildcards.a}_{wildcards.b}_{rulename}"
+    log:
+        log = config.get("log", f"{OUTDIR}/log/") +
+              f"intermidiate_files_{wildcards.a}_{wildcards.b}_{rulename}",
+        e = config.get("log", f"{OUTDIR}/log/") +
+              f"intermidiate_files_{wildcards.a}_{wildcards.b}_{rulename}_err",
+        o = config.get("log", f"{OUTDIR}/log/") +
+              f"intermidiate_files_{wildcards.a}_{wildcards.b}_{rulename}_out"
     shell:
         """
-        gunzip -c {input[0]} |blastn -query - -db {params.db} -out {output[0]}.redundant -outfmt 6 -perc_identity 95 -num_threads {threads} -max_hsps 1000000 2>> {log.log}
-        awk '$1 != $2 && $4 >= 500' {output[0]}.redundant > {output[0]} 2>> {log.log}
+        gunzip -c {input[0]} \
+        | blastn -query - -db {params.db} \
+            -out {output[0]}.redundant \
+            -outfmt 6 -perc_identity 95 \
+            -num_threads {threads} -max_hsps 1000000 \
+            2>> {log.log}
+
+        awk '$1 != $2 && $4 >= 500' {output[0]}.redundant \
+            > {output[0]} 2>> {log.log}
+
         touch {output[1]}
         """
-
 rulename = "align_all_chunks"
 rule align_all_chunks:
     input:
