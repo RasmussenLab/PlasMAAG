@@ -118,7 +118,7 @@ read_rv =  lambda wildcards: sample_id_path["intermidiate_files"][wildcards.id][
 
 
 # Ensure consistent filename pattern for chunks
-CHUNK_DIR = os.path.join(OUTDIR, "intermidiate_files/assembly_mapping_output/contig_chunks")
+CHUNK_DIR = os.path.join(OUTDIR, "intermidiate_files/assembly_mapping_output/contig_chunks/")
 CHUNK_PATTERN = os.path.join(CHUNK_DIR, "contigs_chunk_{id}.flt.fna.gz")
 
 
