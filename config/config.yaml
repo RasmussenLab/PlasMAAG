@@ -51,6 +51,10 @@ cat_contigs:
   threads: 1
   mem_gb: 4
 
+chunk_contigs:
+  threads: 1
+  mem_gb: 4
+
 get_contig_names:
   threads: 1
   mem_gb: 4
@@ -71,15 +75,15 @@ makeblastdbs:
   threads: 1
   mem_gb: 8
 
-makeblastdbs_all_samples:
+makeblastdbs_all_chunks:
   threads: 1
   mem_gb: 8
 
-align_contigs_per_sample:
+align_contigs_per_chunk:
   threads: 2
-  mem_gb: 8
+  mem_gb: 9
 
-align_all_samples:
+align_all_chunks:
   threads: 1
   mem_gb: 24
 
