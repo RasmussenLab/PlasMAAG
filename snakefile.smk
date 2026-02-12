@@ -489,7 +489,12 @@ rule align_all_chunks:
             for (a, b) in get_chunk_pairs(wildcards)
             ],
         lambda wildcards: [
-            os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/chunk_pairwise/align_contigs_{a}_{b}.finished'),
+            os.path.join(
+                            OUTDIR,
+                            "intermidiate_files",
+                            "rule_completed_checks/blastn/chunk_pairwise",
+                            f"align_contigs_{a}_{b}.finished"
+            ),
             for (a, b) in get_chunk_pairs(wildcards)
             ]
     output:
