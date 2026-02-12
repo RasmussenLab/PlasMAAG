@@ -276,7 +276,7 @@ checkpoint chunk_contigs:
     output: 
         directory(os.path.join(OUTDIR,"intermidiate_files/assembly_mapping_output/contig_chunks")),
         os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/chunk_contigs.finished')
-    params: os.path.join(OUTDIR, "intermidiate_files/assembly_mapping_output/contigs_chunk_") 
+    params: os.path.join(OUTDIR, "intermidiate_files/assembly_mapping_output/contig_chunks/contigs_chunk_") 
     benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files" + rulename
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
