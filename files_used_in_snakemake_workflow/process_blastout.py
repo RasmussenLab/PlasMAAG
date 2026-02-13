@@ -63,117 +63,127 @@ def graph_from_blastout(
         return merged_ranges, total_length
 
     cc_blast_g = nx.Graph()
-    for blast_row in np.loadtxt(blastfile, dtype=object, delimiter="\t"):
-        ci, cj = blast_row[0], blast_row[1]
+    
+    with open(blastfile,"r") as f:
+        for line in f:
 
-        # WARNING LASSE I dont get this assert if they are the same crash?
-        # But arent they aligned all against all?
-        # Pehaps skip does which are the same ?
-        # assert ci != cj:
+            if not line.strip() or line.startswith("#"):
+                continue  # skip blanks and comments
 
-        if (
-            (ci.split(separator)[0] == cj.split(separator)[0]) and not intra_sample_matches_allowed
-        ):  ## continue if matches from the same sample
-            continue
+            blast_row=line.strip().split()
 
-        alig_len = int(blast_row[3])
-        identity = float(blast_row[2])
 
-        if alig_len < min_al:
-            continue
+            ci, cj = blast_row[0], blast_row[1]
+            
+            # WARNING LASSE I dont get this assert if they are the same crash?
+            # But arent they aligned all against all?
+            # Pehaps skip does which are the same ?
+            # assert ci != cj:
 
-        if alig_len >= min_al and identity >= min_id:
-            ci_s, ci_e, cj_s, cj_e = [int(p) for p in blast_row[6:10]]
-            if ci_s > ci_e:
-                ci_s, ci_e = ci_e, ci_s
-            if cj_s > cj_e:
-                cj_s, cj_e = cj_e, cj_s
+            if (
+                (ci.split(separator)[0] == cj.split(separator)[0]) and not intra_sample_matches_allowed
+            ):  ## continue if matches from the same sample
+                continue
+            
+            alig_len = int(blast_row[3])
+            identity = float(blast_row[2])
+            
+            if alig_len < min_al:
+                continue
 
-            valid_al = valid_alignment(
-                contig_len(ci), contig_len(cj), ci_s, ci_e, cj_s, cj_e
-            )
+            if alig_len >= min_al and identity >= min_id:
+                ci_s, ci_e, cj_s, cj_e = [int(p) for p in blast_row[6:10]]
+                if ci_s > ci_e:
+                    ci_s, ci_e = ci_e, ci_s
+                if cj_s > cj_e:
+                    cj_s, cj_e = cj_e, cj_s
 
-            if (ci, cj) not in cc_blast_g.edges():
-                al_ranges_q = [(min(ci_s, ci_e), max(ci_s, ci_e))]
-                al_ranges_s = [(min(cj_s, cj_e), max(cj_s, cj_e))]
-                merged_ranges_q, al_len_q = (
-                    al_ranges_q,
-                    al_ranges_q[0][1] - al_ranges_q[0][0],
-                )
-                merged_ranges_s, al_len_s = (
-                    al_ranges_s,
-                    al_ranges_s[0][1] - al_ranges_s[0][0],
+                valid_al = valid_alignment(
+                    contig_len(ci), contig_len(cj), ci_s, ci_e, cj_s, cj_e
                 )
 
-                alig_len = min(al_len_q, al_len_s)
-
-                weight = (
-                    identity
-                    * (
-                        min(alig_len, contig_len(ci), contig_len(cj))
-                        / min(contig_len(ci), contig_len(cj))
+                if (ci, cj) not in cc_blast_g.edges():
+                    al_ranges_q = [(min(ci_s, ci_e), max(ci_s, ci_e))]
+                    al_ranges_s = [(min(cj_s, cj_e), max(cj_s, cj_e))]
+                    merged_ranges_q, al_len_q = (
+                        al_ranges_q,
+                        al_ranges_q[0][1] - al_ranges_q[0][0],
                     )
-                    * (1 / 100)
-                )
-                cc_blast_g.add_edge(
-                    ci,
-                    cj,
-                    al_len=alig_len,
-                    identity=identity,
-                    restrictive=valid_al,
-                    weight=weight,
-                    q=ci,
-                    s=cj,
-                )
+                    merged_ranges_s, al_len_s = (
+                        al_ranges_s,
+                        al_ranges_s[0][1] - al_ranges_s[0][0],
+                    )
 
-                cc_blast_g[ci][cj]["al_ranges_%s" % ci] = merged_ranges_q
-                cc_blast_g[ci][cj]["al_ranges_%s" % cj] = merged_ranges_s
+                    alig_len = min(al_len_q, al_len_s)
 
-            else:
-                if cc_blast_g[ci][cj]["q"] == cj:
-                    ci, cj = cj, ci
-                    ci_s, ci_e, cj_s, cj_e = cj_s, cj_e, ci_s, ci_e
-
-                al_ranges_q = cc_blast_g[ci][cj]["al_ranges_%s" % ci] + [
-                    (min(ci_s, ci_e), max(ci_s, ci_e))
-                ]
-                al_ranges_s = cc_blast_g[ci][cj]["al_ranges_%s" % cj] + [
-                    (min(cj_s, cj_e), max(cj_s, cj_e))
-                ]
-                al_ranges_q.sort()
-                al_ranges_s.sort()
-
-                merged_ranges_q, al_len_q = merge_ranges(al_ranges_q)
-                merged_ranges_s, al_len_s = merge_ranges(al_ranges_s)
-                alig_len = min(al_len_q, al_len_s)
-
-                extended_alig_len = alig_len - cc_blast_g[ci][cj]["al_len"]
-
-                cc_blast_g[ci][cj]["identity"] = (
-                    cc_blast_g[ci][cj]["identity"] * cc_blast_g[ci][cj]["al_len"]
-                    + identity * extended_alig_len
-                ) / (alig_len)
-                cc_blast_g[ci][cj]["al_len"] = alig_len
-
-                # cc_blast_g[ci][cj]["al_ranges_%s" % ci] = merged_ranges_q
-                # cc_blast_g[ci][cj]["al_ranges_%s" % cj] = merged_ranges_s
-
-                weight = (
-                    cc_blast_g[ci][cj]["identity"]
-                    * (
-                        min(
-                            cc_blast_g[ci][cj]["al_len"],
-                            contig_len(ci),
-                            contig_len(cj),
+                    weight = (
+                        identity
+                        * (
+                            min(alig_len, contig_len(ci), contig_len(cj))
+                            / min(contig_len(ci), contig_len(cj))
                         )
-                        / min(contig_len(ci), contig_len(cj))
+                        * (1 / 100)
                     )
-                    * (1 / 100)
-                )
-                cc_blast_g[ci][cj]["weight"] = weight
-                if not cc_blast_g[ci][cj]["restrictive"]:
-                    cc_blast_g[ci][cj]["restrictive"] = valid_al
+                    cc_blast_g.add_edge(
+                        ci,
+                        cj,
+                        al_len=alig_len,
+                        identity=identity,
+                        restrictive=valid_al,
+                        weight=weight,
+                        q=ci,
+                        s=cj,
+                    )
 
+                    cc_blast_g[ci][cj]["al_ranges_%s" % ci] = merged_ranges_q
+                    cc_blast_g[ci][cj]["al_ranges_%s" % cj] = merged_ranges_s
+
+                else:
+                    if cc_blast_g[ci][cj]["q"] == cj:
+                        ci, cj = cj, ci
+                        ci_s, ci_e, cj_s, cj_e = cj_s, cj_e, ci_s, ci_e
+
+                    al_ranges_q = cc_blast_g[ci][cj]["al_ranges_%s" % ci] + [
+                        (min(ci_s, ci_e), max(ci_s, ci_e))
+                    ]
+                    al_ranges_s = cc_blast_g[ci][cj]["al_ranges_%s" % cj] + [
+                        (min(cj_s, cj_e), max(cj_s, cj_e))
+                    ]
+                    al_ranges_q.sort()
+                    al_ranges_s.sort()
+
+                    merged_ranges_q, al_len_q = merge_ranges(al_ranges_q)
+                    merged_ranges_s, al_len_s = merge_ranges(al_ranges_s)
+                    alig_len = min(al_len_q, al_len_s)
+
+                    extended_alig_len = alig_len - cc_blast_g[ci][cj]["al_len"]
+
+                    cc_blast_g[ci][cj]["identity"] = (
+                        cc_blast_g[ci][cj]["identity"] * cc_blast_g[ci][cj]["al_len"]
+                        + identity * extended_alig_len
+                    ) / (alig_len)
+                    cc_blast_g[ci][cj]["al_len"] = alig_len
+
+                    # cc_blast_g[ci][cj]["al_ranges_%s" % ci] = merged_ranges_q
+                    # cc_blast_g[ci][cj]["al_ranges_%s" % cj] = merged_ranges_s
+
+                    weight = (
+                        cc_blast_g[ci][cj]["identity"]
+                        * (
+                            min(
+                                cc_blast_g[ci][cj]["al_len"],
+                                contig_len(ci),
+                                contig_len(cj),
+                            )
+                            / min(contig_len(ci), contig_len(cj))
+                        )
+                        * (1 / 100)
+                    )
+                    cc_blast_g[ci][cj]["weight"] = weight
+                    if not cc_blast_g[ci][cj]["restrictive"]:
+                        cc_blast_g[ci][cj]["restrictive"] = valid_al
+        
+    print(cc_blast_g.edges(),cc_blast_g.nodes())
     if restrictive_alignments:
         edges_to_remove = [
             (u, v) for u, v in cc_blast_g.edges() if not cc_blast_g[u][v]["restrictive"]
