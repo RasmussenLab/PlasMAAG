@@ -65,10 +65,13 @@ def graph_from_blastout(
     cc_blast_g = nx.Graph()
     
     with open(blastfile,"r") as f:
-        for line in f:
+        for _i_,line in enumerate(f):
 
             if not line.strip() or line.startswith("#"):
                 continue  # skip blanks and comments
+            
+            if (_i_+1) % 1_000_000 == 0:
+                print("%i lines processed"%(_i_+1))
 
             blast_row=line.strip().split()
 
