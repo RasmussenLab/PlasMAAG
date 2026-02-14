@@ -104,6 +104,8 @@ def graph_from_blastout(
                 valid_al = valid_alignment(
                     contig_len(ci), contig_len(cj), ci_s, ci_e, cj_s, cj_e
                 )
+                if not valid_al and restrictive_alignments:
+                    continue
 
                 if (ci, cj) not in cc_blast_g.edges():
                     al_ranges_q = [(min(ci_s, ci_e), max(ci_s, ci_e))]
@@ -186,12 +188,12 @@ def graph_from_blastout(
                     if not cc_blast_g[ci][cj]["restrictive"]:
                         cc_blast_g[ci][cj]["restrictive"] = valid_al
         
-    print(cc_blast_g.edges(),cc_blast_g.nodes())
-    if restrictive_alignments:
-        edges_to_remove = [
-            (u, v) for u, v in cc_blast_g.edges() if not cc_blast_g[u][v]["restrictive"]
-        ]
-        cc_blast_g.remove_edges_from(edges_to_remove)
+    
+    # if restrictive_alignments:
+    #     edges_to_remove = [
+    #         (u, v) for u, v in cc_blast_g.edges() if not cc_blast_g[u][v]["restrictive"]
+    #     ]
+    #     cc_blast_g.remove_edges_from(edges_to_remove)
 
     return cc_blast_g
 
