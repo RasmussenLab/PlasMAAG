@@ -71,7 +71,8 @@ def graph_from_blastout(
                 continue  # skip blanks and comments
             
             if (_i_+1) % 1_000_000 == 0:
-                print("%i lines processed"%(_i_+1))
+                print("%i lines processed, %i (%i) nodes (edges)"%(_i_+1, cc_blast_g.number_of_nodes(), cc_blast_g.number_of_edges()))
+
 
             blast_row=line.strip().split()
 
