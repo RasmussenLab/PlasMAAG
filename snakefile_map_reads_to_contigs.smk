@@ -119,7 +119,7 @@ rule Strobealign_bam_default:
         input:
             fw = read_fw,
             rv = read_rv,
-            contig = "/home/projects/ku_00041/data/EMBARQ/cache/binning/plasmaag_outdir_221/results"
+            contigs = "/home/projects/ku_00041/data/EMBARQ/cache/binning/plasmaag_outdir_221/results/contigs_in_MQ_genomes_plasmids_and_virus.fna"
         output:
             OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam"
         threads: threads_fn(rulename)
@@ -132,7 +132,7 @@ rule Strobealign_bam_default:
         conda: THIS_FILE_DIR / "envs/strobe_env.yaml"
         shell:
             """
-            strobealign -t {threads} {input.contig} {input.fw} {input.rv} > {output} 2> {log.log}
+            strobealign -t {threads} {input.contigs} {input.fw} {input.rv} > {output} 2> {log.log}
             """
 
 # Sort the bam files and index them
@@ -160,7 +160,7 @@ rule sort:
 rulename = "run_VAE"
 rule run_VAE:
     input:
-        contigs = OUTDIR /  "intermidiate_files/assembly_mapping_output/contigs.flt.fna.gz",
+        contigs = "/home/projects/ku_00041/data/EMBARQ/cache/binning/plasmaag_outdir_221/results/contigs_in_MQ_genomes_plasmids_and_virus.fna",
         bamfiles = lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort", id=sample_id["intermidiate_files"])
     output:
         directory = directory(os.path.join(OUTDIR,"intermidiate_files", 'contrastive_VAE')),
