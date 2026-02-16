@@ -178,7 +178,7 @@ rule run_VAE:
         """
         rmdir {output.directory}
         {PLAMB_PRELOAD}
-        vamb bin default --outdir {output.directory} --fasta {input.contigs} -p {threads} --bamfiles {input.bamfiles}\
+        vamb bin default --outdir {output.directory} --fasta {input.contigs} -p {threads} -e 2 -q 1 --bamfiles {input.bamfiles}\
         -m {MIN_CONTIG_LEN} {PLAMB_PARAMS}\
          {params.cuda} &> {log.log}
         touch {output.finished}
