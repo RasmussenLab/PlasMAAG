@@ -13,7 +13,8 @@ def graph_from_blastout(
     min_al,
     restrictive_alignments,
     separator,
-    intra_sample_matches_allowed
+    intra_sample_matches_allowed,
+    memory_efficient,
 ):
     """
     Given a blastfile that contains blast output between contigs,
@@ -188,13 +189,15 @@ def graph_from_blastout(
                     cc_blast_g[ci][cj]["weight"] = weight
                     if not cc_blast_g[ci][cj]["restrictive"]:
                         cc_blast_g[ci][cj]["restrictive"] = valid_al
-        
-    
-    # if restrictive_alignments:
-    #     edges_to_remove = [
-    #         (u, v) for u, v in cc_blast_g.edges() if not cc_blast_g[u][v]["restrictive"]
-    #     ]
-    #     cc_blast_g.remove_edges_from(edges_to_remove)
+
+        if memory_efficient== True:
+            print("Keeping only al_len and identity as edge attributes to save memory")
+            attributes_to_keep = ["al_len", "identity"]
+            
+            for u,v,d in cc_blast_g.edges(data=True):
+                for k in list(d.keys()):
+                    if k not in attributes_to_keep:
+                        del cc_blast_g[u][v][k]
 
     return cc_blast_g
 
@@ -248,7 +251,14 @@ if __name__ == "__main__":
         action="store_true",
         help="if set, alignment graph will also contain edges from contigs from the same sample",
     )
-    
+    parser.add_argument(
+        "--mem_efficient",
+        action="store_false",
+        help="if set, edge attributes will be minimized to save memory, i.e. only al_len and identity will be kept",
+    )
+
+
+
     # Parse the arguments
     args = parser.parse_args()
     print(args)
@@ -265,7 +275,8 @@ if __name__ == "__main__":
                 min_al=args.min_al_len,
                 restrictive_alignments=True if not args.non_restrictive else False,
                 separator=args.separator,
-                intra_sample_matches_allowed= False if not args.intra_sample_matches_allowed else True
+                intra_sample_matches_allowed= False if not args.intra_sample_matches_allowed else True,
+                memory_efficient= False if not args.mem_efficient else True
             ),
             pkl,
         )
