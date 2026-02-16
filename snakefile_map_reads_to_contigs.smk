@@ -161,8 +161,7 @@ rulename = "run_VAE"
 rule run_VAE:
     input:
         contigs = OUTDIR /  "intermidiate_files/assembly_mapping_output/contigs.flt.fna.gz",
-        bamfiles = lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort", id=sample_id["intermidiate_files"]),
-        nb_file = os.path.join(OUTDIR,"intermidiate_files",'neighs','neighs_intraonly_rm_object_r_%s.npz'%NEIGHS_R)
+        bamfiles = lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort", id=sample_id["intermidiate_files"])
     output:
         directory = directory(os.path.join(OUTDIR,"intermidiate_files", 'contrastive_VAE')),
         finished = os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/run_VAE.finished'),
