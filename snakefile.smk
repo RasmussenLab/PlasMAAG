@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import sys
 import itertools
+from snakemake.io import glob_wildcards
 
 # Set the directory the snakefile exists in. This makes us able to call the pipeline with the relevant src files from other directories.
 THIS_FILE_DIR = Path(workflow.basedir)
@@ -112,8 +113,14 @@ if config.get("read_assembly_dir") != None:
 read_fw = lambda wildcards: sample_id_path["intermidiate_files"][wildcards.id][0]
 read_rv =  lambda wildcards: sample_id_path["intermidiate_files"][wildcards.id][1]
 
-## Deinfe pairs for paralel alignment 
-SAMPLE_PAIRS = [(a, b) for a, b in itertools.combinations(sample_id["intermidiate_files"], 2)]
+# ## Deinfe pairs for paralel alignment 
+# SAMPLE_PAIRS = [(a, b) for a, b in itertools.combinations(sample_id["intermidiate_files"], 2)]
+
+
+# Ensure consistent filename pattern for chunks
+CHUNK_DIR = os.path.join(OUTDIR, "intermidiate_files/assembly_mapping_output/contig_chunks/")
+CHUNK_PATTERN = os.path.join(CHUNK_DIR, "contigs_chunk_{id}.flt.fna.gz")
+
 
 # Functions to get the config-defined threads/walltime/mem_gb for a rule and if not defined the default
 threads_fn = lambda rulename: config.get(rulename, {"threads": default_threads}).get("threads", default_threads)
@@ -262,6 +269,57 @@ rule cat_contigs:
     shell:
         "python {params.script} {output} {input} --keepnames -m {MIN_CONTIG_LEN} &> {log.log} "
 
+# chunk contigs.flt.fna.gz into chunks of size 100_000
+rulename="chunk_contigs"
+checkpoint chunk_contigs:
+    input: OUTDIR / "intermidiate_files/assembly_mapping_output/contigs.flt.fna.gz"
+    output: 
+        directory(os.path.join(OUTDIR,"intermidiate_files/assembly_mapping_output/contig_chunks")),
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/chunk_contigs.finished')
+    params: os.path.join(OUTDIR, "intermidiate_files/assembly_mapping_output/contig_chunks/contigs_chunk_") 
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files" + rulename
+    threads: threads_fn(rulename)
+    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
+    log: 
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
+    shell:
+        r"""
+        mkdir -p {output[0]}
+
+        gunzip -c {input} | \
+        awk -v prefix="{params}" -v chunk_size=100000 '
+        /^>/ {{
+            if (count % chunk_size == 0) {{
+                if (out) close(out)
+                chunk = sprintf("%s%04d.flt.fna", prefix, ++file_id)
+                out = "gzip > " chunk ".gz"
+            }}
+            count++
+        }}
+        {{ print | out }}
+        ' 2> {log.log}
+
+        touch {output[1]}
+        """
+
+def get_chunk_ids(wildcards):
+    ck = checkpoints.chunk_contigs.get(**wildcards)   # wait until chunking finished
+    # Discover chunks by glob
+    ids = glob_wildcards(CHUNK_PATTERN).id
+    # Make deterministic order, so "upper triangle" is stable
+    return sorted(ids)
+
+
+def get_chunk_pairs_upper_with_diag(wc):
+    ids = get_chunk_ids(wc)          # must return a sorted list of chunk ids, e.g. ['0001','0002',...]
+    return [(a, b) for i, a in enumerate(ids) for b in ids[i:]]  # a <= b
+
+def get_B_ids(wildcards):
+    pairs = get_chunk_pairs(wildcards)
+    return sorted({b for (a, b) in pairs})
+
 # Extract the contigs names for later use
 rulename = "get_contig_names"
 rule get_contig_names:
@@ -287,7 +345,8 @@ rule Strobealign_bam_default:
             rv = read_rv,
             contig = OUTDIR /"intermidiate_files/assembly_mapping_output/contigs.flt.fna.gz",
         output:
-            OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam"
+            OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam",
+            OUTDIR / "intermidiate_files/rule_completed_checks/mapped/Strobealign_bam_default_{id}.finished"
         threads: threads_fn(rulename)
         resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
         benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
@@ -298,7 +357,8 @@ rule Strobealign_bam_default:
         conda: THIS_FILE_DIR / "envs/strobe_env.yaml"
         shell:
             """
-            strobealign -t {threads} {input.contig} {input.fw} {input.rv} > {output} 2> {log.log}
+            strobealign -t {threads} {input.contig} {input.fw} {input.rv} > {output[0]} 2> {log.log}
+            touch {output[1]}
             """
 
 # Sort the bam files and index them
@@ -308,6 +368,7 @@ rule sort:
         OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam",
     output:
         OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort",
+        OUTDIR /"intermidiate_files/rule_completed_checks/mapped_sort/sort_{id}.finished"
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
     benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
@@ -317,8 +378,9 @@ rule sort:
         o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
     shell:
         """
-    samtools sort --threads {threads} {input} -o {output} 2> {log.log}
-    samtools index {output} 2>> {log.log}
+    samtools sort --threads {threads} {input} -o {output[0]} 2> {log.log}
+    samtools index {output[0]} 2>> {log.log}
+    touch {output[1]}
     """
 
 ## The next part of the pipeline is composed of the following steps:
@@ -363,104 +425,183 @@ rule circularize:
 rulename = "makeblastdbs"
 rule makeblastdbs:
     input:
-        #OUTDIR / "intermidiate_files/assembly_mapping_output/contigs.flt.fna.gz",
-        OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{sampleB}/contigs.flt.fna.gz"
+        CHUNK_PATTERN
     output:
-        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/sample_pairwise/makeblastdbs_{sampleB}.finished')
-    params: os.path.join(OUTDIR, "intermidiate_files",'blastn','sample_pairwise','contigs_{sampleB}.db') # TODO should be made?
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/chunk_pairwise/makeblastdb_chunk_{id}.finished')
+    params: os.path.join(OUTDIR, "intermidiate_files",'blastn','chunk_pairwise','contigs_chunk_{id}.db') 
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{sampleB}" + rulename
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
     log: 
-        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{sampleB}" + rulename,
-        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{sampleB}" + rulename+"_err",
-        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{sampleB}" + rulename+"_out"
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}" + rulename+"_out"
     shell:
         """
-        gunzip -c {input} |makeblastdb -in - -dbtype nucl -out {params} -title contigs_{wildcards.sampleB}.db 2> {log.log}
+        gunzip -c {input} |makeblastdb -in - -dbtype nucl -out {params} -title contigs_chunk_{wildcards.id}.db 2> {log.log}
         touch {output}
         """
 
-rulename = "makeblastdbs_all_samples"
-rule makeblastdbs_all_samples:
+rulename = "makeblastdbs_all_chunks"
+rule makeblastdbs_all_chunks:
     input:
-        lambda wildcards: expand(os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/sample_pairwise/makeblastdbs_{sampleB}.finished'),
-               sampleB=set([b for a, b in SAMPLE_PAIRS])
-               ),
+        # Build DBs only for the B-side of the upper-triangle chunk pairs
+        lambda wildcards: expand(
+            os.path.join(
+                OUTDIR,
+                "intermidiate_files",
+                "rule_completed_checks",
+                "blastn",
+                "chunk_pairwise",
+                "makeblastdb_chunk_{id}.finished",
+            ),
+            id=get_chunk_ids(wildcards),
+        )
     output:
-        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','blastn','makeblastdbs_all_samples.finished')
+        os.path.join(
+            OUTDIR,
+            "intermidiate_files",
+            "rule_completed_checks",
+            "blastn",
+            "makeblastdbs_all_chunks.finished",
+        )
     threads: threads_fn(rulename)
-    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
-    log: 
-        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
-        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
-        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
+    resources:
+        walltime = walltime_fn(rulename),
+        mem_gb  = mem_gb_fn(rulename)
+    benchmark:
+        config.get("benchmark", f"{OUTDIR}/benchmark/") + "intermidiate_files_" + rulename
+    log:
+        log = config.get("log", f"{OUTDIR}/log/") + "intermidiate_files_" + rulename,
+        e   = config.get("log", f"{OUTDIR}/log/") + "intermidiate_files_" + rulename + "_err",
+        o   = config.get("log", f"{OUTDIR}/log/") + "intermidiate_files_" + rulename + "_out"
     shell:
-        """
+        r"""
+        mkdir -p "$(dirname {output})"
         touch {output}
         """
 
-rulename = "align_contigs_per_sample"
-rule align_contigs_per_sample:
+rulename = "align_contigs_per_chunk"
+rule align_contigs_per_chunk:
     input:
-        OUTDIR / "intermidiate_files/assembly_mapping_output/spades_{sampleA}/contigs.flt.fna.gz",
-        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','blastn','makeblastdbs_all_samples.finished')
+        # Query chunk for A
+        lambda wildcards: os.path.join(
+            CHUNK_DIR,
+            f"contigs_chunk_{wildcards.a}.flt.fna.gz"
+        ),
+        # Global flag that all DBs are ready
+        os.path.join(
+            OUTDIR,
+            "intermidiate_files",
+            "rule_completed_checks",
+            "blastn",
+            "makeblastdbs_all_chunks.finished"
+        )
     output:
-        os.path.join(OUTDIR, "intermidiate_files",'blastn','sample_pairwise','blast_{sampleA}_{sampleB}.txt'),
-        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/sample_pairwise/align_contigs_{sampleA}_{sampleB}.finished')
-    params: os.path.join(OUTDIR, "intermidiate_files",'blastn','sample_pairwise','contigs_{sampleB}.db')
+        # BLAST output per chunk pair
+        os.path.join(
+            OUTDIR,
+            "intermidiate_files",
+            "blastn",
+            "chunk_pairwise",
+            "blast_{a}_{b}.txt"
+        ),
+        # Finished flag
+        os.path.join(
+            OUTDIR,
+            "intermidiate_files",
+            "rule_completed_checks",
+            "blastn",
+            "chunk_pairwise",
+            "align_contigs_{a}_{b}.finished"
+        )
+    params:
+        # DB for chunk B (Python f-string, not Snakemake)
+        db=lambda wildcards: os.path.join(
+            OUTDIR,
+            "intermidiate_files",
+            "blastn",
+            "chunk_pairwise",
+            f"contigs_chunk_{wildcards.b}.db"
+        )
     threads: threads_fn(rulename)
-    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{sampleA}_{sampleB}_" + rulename
-    log: 
-        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{sampleA}_{sampleB}_" + rulename,
-        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{sampleA}_{sampleB}_" + rulename+"_err",
-        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{sampleA}_{sampleB}_" + rulename+"_out"
+    resources:
+        walltime = walltime_fn(rulename),
+        mem_gb  = mem_gb_fn(rulename)
+    benchmark:
+        config.get("benchmark", f"{OUTDIR}/benchmark/") +
+        "intermidiate_files_{a}_{b}_" + rulename
+    log:
+        log = config.get("log", f"{OUTDIR}/log/") +
+              "intermidiate_files_{a}_{b}_" + rulename,
+        e   = config.get("log", f"{OUTDIR}/log/") +
+              "intermidiate_files_{a}_{b}_" + rulename + "_err",
+        o   = config.get("log", f"{OUTDIR}/log/") +
+              "intermidiate_files_{a}_{b}_" + rulename + "_out"
     shell:
         """
-        gunzip -c {input[0]} |blastn -query - -db {params} -out {output[0]}.redundant -outfmt 6 -perc_identity 95 -num_threads {threads} -max_hsps 1000000 2>> {log.log}
-        awk '$1 != $2 && $4 >= 500' {output[0]}.redundant > {output[0]} 2>> {log.log}
+        gunzip -c {input[0]} \
+        | blastn -query - \
+                 -db {params.db} \
+                 -out {output[0]}.redundant \
+                 -outfmt 6 \
+                 -perc_identity 95 \
+                 -num_threads {threads} \
+                 -max_hsps 1000000 \
+                 2>> {log.log}
+
+        awk '$1 != $2 && $4 >= 500' {output[0]}.redundant \
+            > {output[0]} \
+            2>> {log.log}
+
         touch {output[1]}
         """
-
-rulename = "align_all_samples"
-rule align_all_samples:
+rulename = "align_all_chunks"
+rule align_all_chunks:
     input:
-        blast_outputs_per_sample=lambda wildcards: expand(
-            os.path.join(OUTDIR, "intermidiate_files",'blastn','sample_pairwise','blast_{sampleA}_{sampleB}.txt'),
-            zip,
-            sampleA=[a for a, b in SAMPLE_PAIRS],
-            sampleB=[b for a, b in SAMPLE_PAIRS]
-            ),
-        blast_fins_per_sample=lambda wildcards: expand(
-            os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/sample_pairwise/align_contigs_{sampleA}_{sampleB}.finished'),
-            zip,
-            sampleA=[a for a, b in SAMPLE_PAIRS],
-            sampleB=[b for a, b in SAMPLE_PAIRS]
+        # BLAST output files
+        lambda wildcards: [
+            os.path.join(
+                OUTDIR,
+                "intermidiate_files",
+                "blastn",
+                "chunk_pairwise",
+                f"blast_{a}_{b}.txt"
             )
+            for a, b in get_chunk_pairs_upper_with_diag(wildcards)
+        ],
+        # Finished marker files
+        lambda wildcards: [
+            os.path.join(
+                OUTDIR,
+                "intermidiate_files",
+                "rule_completed_checks/blastn/chunk_pairwise",
+                f"align_contigs_{a}_{b}.finished"
+            )
+            for a, b in get_chunk_pairs_upper_with_diag(wildcards)
+        ]
     output:
-        os.path.join(OUTDIR,"intermidiate_files",'blastn','blastn_all_against_all.txt'),
-        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/align_contigs.finished')
+        os.path.join(OUTDIR, "intermidiate_files", "blastn", "blastn_all_against_all.txt"),
+        os.path.join(OUTDIR, "intermidiate_files", "rule_completed_checks/blastn/align_contigs.finished")
     threads: threads_fn(rulename)
-    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
-    log: 
-        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
-        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
-        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
+    resources:
+        walltime = walltime_fn(rulename),
+        mem_gb = mem_gb_fn(rulename)
+    benchmark:
+        config.get("benchmark", f"{OUTDIR}/benchmark/") + "intermidiate_files_" + rulename
+    log:
+        log = config.get("log", f"{OUTDIR}/log/") + "intermidiate_files_" + rulename,
+        e   = config.get("log", f"{OUTDIR}/log/") + "intermidiate_files_" + rulename + "_err",
+        o   = config.get("log", f"{OUTDIR}/log/") + "intermidiate_files_" + rulename + "_out"
     shell:
         """
-        # Ensure output exists and is empty
         mkdir -p "$(dirname {output[0]})"
         : > "{output[0]}"
 
-        # Concatenate all matching files safely (no ARG_MAX issues)
-        find {OUTDIR}/intermidiate_files/blastn/sample_pairwise \
-        -type f -name 'blast_*.txt' -print0 \
-        | xargs -0 -r cat -- \
-        >> {output[0]} 2>> {log.log}        
-        
+        find {OUTDIR}/intermidiate_files/blastn/chunk_pairwise \
+            -type f -name 'blast_*.txt' -print0 \
+        | xargs -0 -r cat -- >> {output[0]} 2>> {log.log}
+
         touch {output[1]}
         """
 

@@ -51,6 +51,10 @@ cat_contigs:
   threads: 1
   mem_gb: 4
 
+chunk_contigs:
+  threads: 1
+  mem_gb: 4
+
 get_contig_names:
   threads: 1
   mem_gb: 4
@@ -61,25 +65,25 @@ Strobealign_bam_default:
 
 sort:
   threads: 8
-  mem_gb: 64
+  mem_gb: 16
 
 circularize:
   threads: 1
-  mem_gb: 4
+  mem_gb: 16
 
 makeblastdbs:
   threads: 1
   mem_gb: 8
 
-makeblastdbs_all_samples:
+makeblastdbs_all_chunks:
   threads: 1
   mem_gb: 8
 
-align_contigs_per_sample:
+align_contigs_per_chunk:
   threads: 2
-  mem_gb: 8
+  mem_gb: 9
 
-align_all_samples:
+align_all_chunks:
   threads: 1
   mem_gb: 24
 
@@ -104,8 +108,8 @@ extract_neighs_from_n2v_embeddings:
   mem_gb: 180
 
 run_contrastive_VAE:
-  threads: 40
-  mem_gb: 180
+  threads: 10
+  mem_gb: 128
 
 merge_circular_with_graph_clusters:
   threads: 1
