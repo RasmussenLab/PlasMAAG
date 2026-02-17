@@ -65,11 +65,11 @@ Strobealign_bam_default:
 
 sort:
   threads: 8
-  mem_gb: 64
+  mem_gb: 16
 
 circularize:
   threads: 1
-  mem_gb: 4
+  mem_gb: 16
 
 makeblastdbs:
   threads: 1
