@@ -192,7 +192,7 @@ def graph_from_blastout(
 
         if memory_efficient== True:
             print("Keeping only al_len and identity as edge attributes to save memory")
-            attributes_to_keep = ["al_len", "identity"]
+            attributes_to_keep = ["al_len", "identity","weight"]
             
             for u,v,d in cc_blast_g.edges(data=True):
                 for k in list(d.keys()):
