@@ -345,7 +345,8 @@ rule Strobealign_bam_default:
             rv = read_rv,
             contig = OUTDIR /"intermidiate_files/assembly_mapping_output/contigs.flt.fna.gz",
         output:
-            OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam"
+            OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam",
+            OUTDIR / "intermidiate_files/rule_completed_checks/mapped/Strobealign_bam_default_{id}.finished"
         threads: threads_fn(rulename)
         resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
         benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
@@ -356,7 +357,8 @@ rule Strobealign_bam_default:
         conda: THIS_FILE_DIR / "envs/strobe_env.yaml"
         shell:
             """
-            strobealign -t {threads} {input.contig} {input.fw} {input.rv} > {output} 2> {log.log}
+            strobealign -t {threads} {input.contig} {input.fw} {input.rv} > {output[0]} 2> {log.log}
+            touch {output[1]}
             """
 
 # Sort the bam files and index them
@@ -366,6 +368,7 @@ rule sort:
         OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam",
     output:
         OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort",
+        OUTDIR /"intermidiate_files/rule_completed_checks/mapped_sort/sort_{id}.finished"
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
     benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
@@ -375,8 +378,9 @@ rule sort:
         o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
     shell:
         """
-    samtools sort --threads {threads} {input} -o {output} 2> {log.log}
-    samtools index {output} 2>> {log.log}
+    samtools sort --threads {threads} {input} -o {output[0]} 2> {log.log}
+    samtools index {output[0]} 2>> {log.log}
+    touch {output[1]}
     """
 
 ## The next part of the pipeline is composed of the following steps:
