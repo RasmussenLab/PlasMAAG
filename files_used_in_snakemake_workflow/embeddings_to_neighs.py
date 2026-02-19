@@ -14,40 +14,65 @@ import vamb
 
 
 # define functions and classess
-def find_neighbours_optimized(
+def find_neighbours_optimized_2(
     embeddings_bincontigs,
     contignames,
-    idxs_without_embeddings,
-    c_cc_d,
+    ccs_graph_d,
     radius_clustering=0.2,
+    build_graph=False,
 ):
-    """ """
-    radius = radius_clustering / 2
+    """Optimized neighbor finder that only compares contigs belonging 
+    to the same cluster (based on ccs_graph_d)."""
 
+    radius = radius_clustering / 2
     communities_g = nx.Graph()
     embeddings_bincontigs_nz = vamb.cluster._normalize(embeddings_bincontigs)
-    neighs = []
 
-    ## For each contig embeddings_bincontigs, find the contigs that are within a distance, and link them
-    for i in range(len(embeddings_bincontigs)):
-        neighs.append([])
-        if i in idxs_without_embeddings:
-            continue
+    neighs = [[] for _ in range(len(contignames))]
 
-        distances = vamb.cluster._calc_distances(embeddings_bincontigs_nz, i)
-        ## can I use the triangle inequality to optimize this, so it does not compute all against all for every contig?s
-        mask_ = torch.ones(len(embeddings_bincontigs), dtype=torch.bool)
-        mask_[i] = False
-        within_radius = (distances <= radius) & mask_
+    contig_index_lookup = {name: idx for idx, name in enumerate(contignames)}
 
-        if torch.sum(within_radius) == 0:  # in such case it will not have a neighbour
-            continue
-        else:
-            for j,lat_neigh_idx in enumerate(np.where(within_radius)[0]):
-                if c_cc_d[contignames[lat_neigh_idx]] == c_cc_d[contignames[i]]:
-                    communities_g.add_edge(contignames[i], contignames[lat_neigh_idx],distance=distances[within_radius][j].item())
-                    neighs[i].append(lat_neigh_idx)
-    
+    for contigs_in_cluster in ccs_graph_d.values():
+
+        # Restrict distance computation to cluster mates only
+        sorted_contig_idxs = sorted([contig_index_lookup[c] for c in contigs_in_cluster])
+
+        # improvable
+        mask_cluster = torch.zeros(len(embeddings_bincontigs), dtype=torch.bool)
+        mask_cluster[sorted_contig_idxs] = True
+
+        # Local name list
+        sorted_contigs_in_cluster = [contignames[idx] for idx in sorted_contig_idxs]
+        sorted_contigs_in_cluster_to_id = {contig: idx for idx, contig in enumerate(sorted_contigs_in_cluster)}
+
+        for i, contig in enumerate(sorted_contigs_in_cluster):
+
+            # Computing distances on the cluster‑filtered embedding array
+            cluster_distances = vamb.cluster._calc_distances(
+                embeddings_bincontigs_nz[mask_cluster], 
+                sorted_contigs_in_cluster_to_id[contig]
+            )
+
+            within_radius_mask = cluster_distances <= radius
+
+            # self-distance removal - improvable 
+            within_radius_mask[i] = False
+
+            if torch.sum(within_radius_mask) == 0:
+                continue
+
+            for j, lat_neigh_idx in enumerate(np.where(within_radius_mask)[0]):
+
+                # neighborhood indexing
+                neighs[contig_index_lookup[contig]].append(sorted_contig_idxs[lat_neigh_idx])
+
+                if build_graph:
+                    communities_g.add_edge(
+                        contig, 
+                        sorted_contigs_in_cluster[lat_neigh_idx],
+                        distance=cluster_distances[within_radius_mask][j].item()
+                    )
+
     return (np.array(neighs, dtype=object), communities_g)
 
 
@@ -153,6 +178,8 @@ if __name__ == "__main__":
     # Load graph file
     with open(args.g, "rb") as pkl_file:
         graph = pickle.load(pkl_file)
+    print("Graph loaded with %i nodes and %i edges" % (graph.number_of_nodes(), graph.number_of_edges()))
+    
     # Define which component each contig belongs to
     ccs_graph_d = {i: cc for i, cc in enumerate(nx.connected_components(graph))}
     c_cc_d = {c: i for i, cs in ccs_graph_d.items() for c in cs}
@@ -161,6 +188,7 @@ if __name__ == "__main__":
     radiuses = [float(r) for r in args.r]
 
     # Load contignames
+    print("Loading contig names...")
     if args.contignames != None:
         ## Load the names of the contigs that will be used for binning BE CAREFUL SINCE HE CONTIGNAMES USUALLY USED ONLY APPLUES FOR MIN CONTIG LEN 2000
         contignames = np.loadtxt(args.contignames, dtype=object)
@@ -169,6 +197,17 @@ if __name__ == "__main__":
         contignames = np.loadtxt(args.contigs_embs, dtype=object)
 
     print("len of contignames %i" % (len(contignames)))
+
+    contignames_set = set(contignames)
+
+    ccs_graph_only_binning_contigs_d = {}
+    for i, cc in ccs_graph_d.items():
+        inter = cc & contignames_set   
+        if len(inter) > 1:
+            ccs_graph_only_binning_contigs_d[i] = inter
+
+    print("Number of clusters with more than 1 contig in the binning set: %i" % len(ccs_graph_only_binning_contigs_d.keys()))
+    
     c_idx_d = {c: i for i, c in enumerate(contignames)}
 
     # Load the embeddings, and the contigs that are represented in those embeddings
@@ -196,13 +235,14 @@ if __name__ == "__main__":
     for radius in radiuses:
         print("Finding neighbours within radius %.3f" % radius)
         embs_d[radius] = dict()
-        embs_d[radius]["neighs"] = find_neighbours_optimized(
+        embs_d[radius]["neighs"] = find_neighbours_optimized_2(
             embeddings_bincontigs,
             contignames,
-            np.where(embeddings_mask == False)[0],
-            c_cc_d,
+            ccs_graph_only_binning_contigs_d,
             radius,
+            build_graph=True
         )
+        print("Optimized version finished in %.2f seconds" % (time.time() - t0))
 
         ## extract also neighs split by sample
         embs_d[radius]["neighs_split_by_sample"] = split_neighs_per_sample(
@@ -226,20 +266,21 @@ if __name__ == "__main__":
             [c for h in hoods_to_remove for c in embs_d[radius]["nhbds"][h]]
         )
         print(
-            "%i hoods with %i contigs will be removed since they contain only contigs from dif samples"
-            % (len(hoods_to_remove), len(contigs_to_clear_neighs))
+            "%i/%i hoods with %i contigs will be removed since they contain only contigs from dif samples"
+            % (len(hoods_to_remove),len(embs_d[radius]["nhbds"].keys()), len(contigs_to_clear_neighs))
         )
-
-        embs_d[radius]["neighs_cleared"] = find_neighbours_optimized(
-            embeddings_bincontigs,
-            contignames,
-            set(np.where(embeddings_mask == False)[0]).union(
+        contigs_without_neighs= set(np.where(embeddings_mask == False)[0]).union(
                 set([c_idx_d[c] for c in contigs_to_clear_neighs])
-            ),
-            c_cc_d,
-            radius,
-        )
+            )
 
+        neighs_clean = np.array(
+            [ [] if c_i in contigs_without_neighs else embs_d[radius]["neighs"][0][c_i] for c_i in range(len(contignames))  ],
+            dtype=object)
+        nodes_to_remove = set([  contignames[c_i] for c_i in range(len(contignames)) if c_i in contigs_without_neighs ])
+
+        embs_d[radius]["neighs_cleared"] = (neighs_clean,embs_d[radius]["neighs"][1].remove_nodes_from(nodes_to_remove))
+        
+        
         embs_d[radius]["nhbds_cleared"], embs_d[radius]["nhbds_cleared_g"] = (
             get_neighbourhoods(embs_d[radius]["neighs_cleared"][0], contignames)
         )
