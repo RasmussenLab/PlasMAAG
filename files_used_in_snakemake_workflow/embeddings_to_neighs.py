@@ -31,8 +31,13 @@ def find_neighbours_optimized_2(
     neighs = [[] for _ in range(len(contignames))]
 
     contig_index_lookup = {name: idx for idx, name in enumerate(contignames)}
-
-    for contigs_in_cluster in ccs_graph_d.values():
+    total_clusters = len(ccs_graph_d.keys())
+    fraction_clusters = round(total_clusters*0.1)
+    
+    total_contigs = len(contignames)
+    contigs_counter = 0
+    fraction_contigs = round(len(contignames)*0.1)
+    for cluster_n, contigs_in_cluster in enumerate(ccs_graph_d.values()):
 
         # Restrict distance computation to cluster mates only
         sorted_contig_idxs = sorted([contig_index_lookup[c] for c in contigs_in_cluster])
@@ -73,6 +78,14 @@ def find_neighbours_optimized_2(
                         distance=cluster_distances[within_radius_mask][j].item()
                     )
 
+        contigs_counter += len(contigs_in_cluster)
+        if (contigs_counter+1) > fraction_contigs:
+            print("\t%i/%i contigs processed"%(contigs_counter+1,total_contigs))
+            fraction_contigs += round(len(contignames)*0.1)
+
+        if (cluster_n +1) % fraction_clusters == 0:
+            print("%i/%i clusters processed"%(cluster_n+1,total_clusters))
+    
     return (np.array(neighs, dtype=object), communities_g)
 
 
