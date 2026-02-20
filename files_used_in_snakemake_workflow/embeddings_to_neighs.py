@@ -189,9 +189,10 @@ if __name__ == "__main__":
 
     ## Load files
     # Load graph file
+    t0=time.time()
     with open(args.g, "rb") as pkl_file:
         graph = pickle.load(pkl_file)
-    print("Graph loaded with %i nodes and %i edges" % (graph.number_of_nodes(), graph.number_of_edges()))
+    print("Graph loaded with %i nodes and %i edges in %.2f seconds" % (graph.number_of_nodes(), graph.number_of_edges(),time.time()-t0))
     
     # Define which component each contig belongs to
     ccs_graph_d = {i: cc for i, cc in enumerate(nx.connected_components(graph))}
@@ -214,12 +215,15 @@ if __name__ == "__main__":
     contignames_set = set(contignames)
 
     ccs_graph_only_binning_contigs_d = {}
+    ccs_graph_only_binning_contigs_d_counts = []
     for i, cc in ccs_graph_d.items():
         inter = cc & contignames_set   
         if len(inter) > 1:
             ccs_graph_only_binning_contigs_d[i] = inter
+            ccs_graph_only_binning_contigs_d_counts.append(len(inter))
 
     print("Number of clusters with more than 1 contig in the binning set: %i" % len(ccs_graph_only_binning_contigs_d.keys()))
+    print("Average (std) contigs per cluster: %.2f (%.2f)" % (np.mean(ccs_graph_only_binning_contigs_d_counts),np.std(ccs_graph_only_binning_contigs_d_counts)))
     
     c_idx_d = {c: i for i, c in enumerate(contignames)}
 
@@ -301,7 +305,7 @@ if __name__ == "__main__":
         t1 = time.time()
 
         print(
-            "Neighbours and neighbourhoods computed in %.2f minutes" % ((t1 - t0) / 60)
+            "Neighbours and neighbourhoods computed in %.2f seconds" % ((t1 - t0))
         )
 
         if args.contignames == None:
