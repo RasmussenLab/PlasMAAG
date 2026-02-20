@@ -2613,37 +2613,49 @@ def run_bin_contr_vamb(
     del latent
 
 
-
 def clean_neighs_with_latents(
     latent,
     neighs,
     max_radius=0.2
 ):
     """
-    Given the contig latents, and the neighs, break neighbour connections if neighbours are furhter than a given cosine distance
+    Given contig latent vectors and neighbor lists, remove neighbors whose
+    cosine distance (normalized angular distance) is greater than max_radius.
     """
-    neighs_clean=[]
+    logger.info(f"Breaking neighbour connections if further than {max_radius} normalized cosine distance")
+
+    n_contigs = latent.shape[0]
     latent_nz = vamb.cluster._normalize(latent)
-    total_neighs_removed=0
-    total_neighs_original=0
-    logger.info("Breaking neighbour connections if further than %s normalized cosine distance"%str(max_radius))
-    for c_idx,neigh_idxs in enumerate(neighs):
-        if len(neigh_idxs)==0:
-            neighs_clean.append([])
+
+    neighs_clean = [[] for _ in range(n_contigs)]
+
+    for contig_idx, neigh_idxs in enumerate(neighs):
+
+        if len(neigh_idxs) == 0:
             continue
-        distances = vamb.cluster._calc_distances(latent_nz,c_idx)
-        mask_neighs = torch.zeros(len(latent_nz),dtype=bool)
-        mask_neighs[neigh_idxs] = True
-        #print("Neighs before cleaning",neigh_idxs)
-        within_max_radius = (distances <= max_radius) & mask_neighs # keep contigs that are neighbours and are within the max radius on latent space
-        neighs_clean_i = list(np.arange(len(neighs))[within_max_radius])
-        #logger("Neighs after cleaning",neighs_clean_i))
-        neighs_clean.append(neighs_clean_i)
-        total_neighs_removed += len(neigh_idxs)-len(neighs_clean_i)
-        total_neighs_original+= len(neigh_idxs)
-    logger.info("%i neighs before cleaining with latents"%total_neighs_original)
-    logger.info("%i neighs after cleaining with latents"%(total_neighs_original-total_neighs_removed))
-    return neighs_clean                
+        
+        # Build cluster-local index array: contig + its neighbors
+        # No need to sort unless you require sorted output
+        local_idxs = torch.tensor([contig_idx] + neigh_idxs, dtype=torch.long)
+        
+        # Slice latent space only for needed contigs
+        latent_local = latent_nz[local_idxs]
+
+        # Distance between contig_idx (local index 0) and all others
+        distances = vamb.cluster._calc_distances(latent_local, 0)
+
+        # Build mask: within radius & not self
+        within = distances <= max_radius
+        within[0] = False
+
+        if torch.any(within):
+            # Map local indices back to global indices
+            kept_global_idxs = local_idxs[within].tolist()
+            neighs_clean[contig_idx] = kept_global_idxs
+    
+    logger.info(f"{sum(len(n) for n in neighs)} neighs before cleaning with latents")
+    logger.info(f"{sum(len(n) for n in neighs_clean)} neighs after cleaning with latents")
+    return neighs_clean
         
         
 def cluster_hoods_based(
