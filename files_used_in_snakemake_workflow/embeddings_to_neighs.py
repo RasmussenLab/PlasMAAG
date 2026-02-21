@@ -292,7 +292,7 @@ if __name__ == "__main__":
             contignames,
             ccs_graph_only_binning_contigs_d,
             radius,
-            build_graph=True
+            build_graph=False
         )
         print("Optimized version finished in %.2f seconds" % (time.time() - t0))
 
