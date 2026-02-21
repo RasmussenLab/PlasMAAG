@@ -45,11 +45,11 @@ def find_neighbours_optimized_2(
     contig_index_lookup = {name: idx for idx, name in enumerate(contignames)}
 
     total_clusters = len(ccs_graph_d)
-    fraction_clusters = max(1, round(total_clusters * 0.1))
+    fraction_clusters = max(1, round(total_clusters * 0.01))
 
     total_contigs = len(contignames)
     contigs_counter = 0
-    fraction_contigs = max(1, round(len(contignames) * 0.1))
+    fraction_contigs = max(1, round(len(contignames) * 0.01))
 
     with torch.inference_mode():
         for cluster_n, contigs_in_cluster in enumerate(ccs_graph_d.values()):
@@ -62,7 +62,7 @@ def find_neighbours_optimized_2(
                 contigs_counter += len(sorted_contig_idxs)
                 if (contigs_counter + 1) > fraction_contigs:
                     print(f"\t{contigs_counter+1}/{total_contigs} contigs processed")
-                    fraction_contigs += max(1, round(len(contignames) * 0.1))
+                    fraction_contigs += max(1, round(len(contignames) * 0.01))
                 if (cluster_n + 1) % fraction_clusters == 0:
                     print(f"{cluster_n+1}/{total_clusters} clusters processed")
                 continue
@@ -117,7 +117,7 @@ def find_neighbours_optimized_2(
             contigs_counter += len(sorted_contig_idxs)
             if (contigs_counter + 1) > fraction_contigs:
                 print(f"\t{contigs_counter+1}/{total_contigs} contigs processed")
-                fraction_contigs += max(1, round(len(contignames) * 0.1))
+                fraction_contigs += max(1, round(len(contignames) * 0.01))
 
             if (cluster_n + 1) % fraction_clusters == 0:
                 print(f"{cluster_n+1}/{total_clusters} clusters processed")
