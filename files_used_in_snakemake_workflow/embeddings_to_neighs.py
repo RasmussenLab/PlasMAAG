@@ -14,6 +14,10 @@ import vamb
 
 
 # define functions and classess
+import torch
+import numpy as np
+import networkx as nx
+
 def find_neighbours_optimized_2(
     embeddings_bincontigs,
     contignames,
@@ -22,72 +26,103 @@ def find_neighbours_optimized_2(
     build_graph=False,
 ):
     """Optimized neighbor finder that only compares contigs belonging 
-    to the same cluster (based on ccs_graph_d)."""
+    to the same cluster (based on ccs_graph_d). Runs on GPU if available.
+    """
 
+    # --- Device selection ---
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    print("Running in %s" %("GPU" if torch.cuda.is_available() else "CPU"))
     radius = radius_clustering / 2
     communities_g = nx.Graph()
+
+    # Normalize and ensure Torch tensor on chosen device
     embeddings_bincontigs_nz = vamb.cluster._normalize(embeddings_bincontigs)
+    if not torch.is_tensor(embeddings_bincontigs_nz):
+        embeddings_bincontigs_nz = torch.as_tensor(embeddings_bincontigs_nz)
+    embeddings_bincontigs_nz = embeddings_bincontigs_nz.to(device=device, dtype=torch.float32)
 
     neighs = [[] for _ in range(len(contignames))]
-
     contig_index_lookup = {name: idx for idx, name in enumerate(contignames)}
-    total_clusters = len(ccs_graph_d.keys())
-    fraction_clusters = round(total_clusters*0.1)
-    
+
+    total_clusters = len(ccs_graph_d)
+    fraction_clusters = max(1, round(total_clusters * 0.1))
+
     total_contigs = len(contignames)
     contigs_counter = 0
-    fraction_contigs = round(len(contignames)*0.1)
-    for cluster_n, contigs_in_cluster in enumerate(ccs_graph_d.values()):
+    fraction_contigs = max(1, round(len(contignames) * 0.1))
 
-        # Restrict distance computation to cluster mates only
-        sorted_contig_idxs = sorted([contig_index_lookup[c] for c in contigs_in_cluster])
+    with torch.inference_mode():
+        for cluster_n, contigs_in_cluster in enumerate(ccs_graph_d.values()):
 
-        # improvable
-        mask_cluster = torch.zeros(len(embeddings_bincontigs), dtype=torch.bool)
-        mask_cluster[sorted_contig_idxs] = True
-
-        # Local name list
-        sorted_contigs_in_cluster = [contignames[idx] for idx in sorted_contig_idxs]
-        sorted_contigs_in_cluster_to_id = {contig: idx for idx, contig in enumerate(sorted_contigs_in_cluster)}
-
-        for i, contig in enumerate(sorted_contigs_in_cluster):
-
-            # Computing distances on the cluster‑filtered embedding array
-            cluster_distances = vamb.cluster._calc_distances(
-                embeddings_bincontigs_nz[mask_cluster], 
-                sorted_contigs_in_cluster_to_id[contig]
+            # Map cluster contig names to global indices (CPU)
+            sorted_contig_idxs = sorted(
+                contig_index_lookup[c] for c in contigs_in_cluster if c in contig_index_lookup
             )
-
-            within_radius_mask = cluster_distances <= radius
-
-            # self-distance removal - improvable 
-            within_radius_mask[i] = False
-
-            if torch.sum(within_radius_mask) == 0:
+            if len(sorted_contig_idxs) < 2:
+                contigs_counter += len(sorted_contig_idxs)
+                if (contigs_counter + 1) > fraction_contigs:
+                    print(f"\t{contigs_counter+1}/{total_contigs} contigs processed")
+                    fraction_contigs += max(1, round(len(contignames) * 0.1))
+                if (cluster_n + 1) % fraction_clusters == 0:
+                    print(f"{cluster_n+1}/{total_clusters} clusters processed")
                 continue
 
-            for j, lat_neigh_idx in enumerate(np.where(within_radius_mask)[0]):
+            # --- (Minimal change) Build mask on device ---
+            mask_cluster = torch.zeros(len(embeddings_bincontigs_nz), dtype=torch.bool, device=device)
+            idxs_tensor = torch.tensor(sorted_contig_idxs, dtype=torch.long, device=device)
+            mask_cluster[idxs_tensor] = True
 
-                # neighborhood indexing
-                neighs[contig_index_lookup[contig]].append(sorted_contig_idxs[lat_neigh_idx])
+            # Local name list (CPU)
+            sorted_contigs_in_cluster = [contignames[idx] for idx in sorted_contig_idxs]
+            sorted_contigs_in_cluster_to_id = {contig: idx for idx, contig in enumerate(sorted_contigs_in_cluster)}
 
-                if build_graph:
-                    communities_g.add_edge(
-                        contig, 
-                        sorted_contigs_in_cluster[lat_neigh_idx],
-                        distance=cluster_distances[within_radius_mask][j].item()
-                    )
+            # Iterate contigs in this cluster
+            for i, contig in enumerate(sorted_contigs_in_cluster):
+                # Compute distances on cluster-filtered embedding array (still your call)
+                # NOTE: This slices on the device, so calc happens on GPU if available
+                cluster_distances = vamb.cluster._calc_distances(
+                    embeddings_bincontigs_nz[mask_cluster],
+                    sorted_contigs_in_cluster_to_id[contig]
+                )
 
-        contigs_counter += len(contigs_in_cluster)
-        if (contigs_counter+1) > fraction_contigs:
-            print("\t%i/%i contigs processed"%(contigs_counter+1,total_contigs))
-            fraction_contigs += round(len(contignames)*0.1)
+                # within-radius mask on device
+                within_radius_mask = cluster_distances <= radius
 
-        if (cluster_n +1) % fraction_clusters == 0:
-            print("%i/%i clusters processed"%(cluster_n+1,total_clusters))
-    
+                # self-distance removal
+                # i is a Python int for local index; mask is device tensor
+                if within_radius_mask.numel() > i:
+                    within_radius_mask[i] = False
+
+                if not torch.any(within_radius_mask):
+                    continue
+
+                # Torch where (no NumPy), then move small indices to CPU once
+                lat_neigh_local = torch.where(within_radius_mask)[0]
+                lat_neigh_local_cpu = lat_neigh_local.to("cpu").numpy()  # small transfer
+
+                for j, lat_neigh_idx in enumerate(lat_neigh_local_cpu):
+                    # Map local cluster index -> global index (CPU list)
+                    global_neigh_idx = sorted_contig_idxs[lat_neigh_idx]
+                    neighs[contig_index_lookup[contig]].append(global_neigh_idx)
+
+                    if build_graph:
+                        # Extract distance for this neighbor; small scalar transfer
+                        d = cluster_distances[within_radius_mask][j].item()
+                        communities_g.add_edge(
+                            contig,
+                            sorted_contigs_in_cluster[lat_neigh_idx],
+                            distance=d
+                        )
+
+            contigs_counter += len(sorted_contig_idxs)
+            if (contigs_counter + 1) > fraction_contigs:
+                print(f"\t{contigs_counter+1}/{total_contigs} contigs processed")
+                fraction_contigs += max(1, round(len(contignames) * 0.1))
+
+            if (cluster_n + 1) % fraction_clusters == 0:
+                print(f"{cluster_n+1}/{total_clusters} clusters processed")
+
     return (np.array(neighs, dtype=object), communities_g)
-
 
 def split_neighs_per_sample(neighs, contignames):
     neighs_sorted_same_sample = []
