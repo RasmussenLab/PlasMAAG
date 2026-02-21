@@ -298,16 +298,16 @@ if __name__ == "__main__":
         print("Optimized version finished in %.2f seconds" % (time.time() - t0))
 
         ## extract also neighs split by sample
-        embs_d[radius]["neighs_split_by_sample"] = split_neighs_per_sample(
-            embs_d[radius]["neighs"][0], contignames
-        )
+        # embs_d[radius]["neighs_split_by_sample"] = split_neighs_per_sample(
+        #     embs_d[radius]["neighs"][0], contignames
+        # )
         ## Define community of neighbours if a path of contigs within raidus can be walked
         # embs_d[radius]["nhbds"], embs_d[radius]["nhbds_g"], hoods_split_bool = (
         embs_d[radius]["nhbds"], embs_d[radius]["nhbds_g"] = get_neighbourhoods(
             embs_d[radius]["neighs"][0], contignames
         )
 
-        c_hood_d = {c: hood for hood, cs in embs_d[radius]["nhbds"].items() for c in cs}
+        #c_hood_d = {c: hood for hood, cs in embs_d[radius]["nhbds"].items() for c in cs}
 
         ## also save neighs where hoods are removed if they are composed of only neighs from diff samples, i.e. hoood : {S1C1, S2C2}
         hoods_to_remove = set()
@@ -381,15 +381,15 @@ if __name__ == "__main__":
                 f"Neighs where only intra edges hoods are removed by sample saved in {neighs_file}"
             )
 
-            ## also save neighs split by sample
-            neighs_file = os.path.join(
-                args.neighs_outdir, "neighs_split_object_r_%s.npz" % (str(radius))
-            )
-            np.savez_compressed(
-                neighs_file,
-                embs_d[radius]["neighs_split_by_sample"][0],
-            )
-            print(f"Neighs split by sample saved in {neighs_file}")
+            # ## also save neighs split by sample
+            # neighs_file = os.path.join(
+            #     args.neighs_outdir, "neighs_split_object_r_%s.npz" % (str(radius))
+            # )
+            # np.savez_compressed(
+            #     neighs_file,
+            #     embs_d[radius]["neighs_split_by_sample"][0],
+            # )
+            # print(f"Neighs split by sample saved in {neighs_file}")
 
         hoods_clusters_path = os.path.join(
             args.neighs_outdir, "hoods_clusters_r_%s.tsv" % (str(radius))
