@@ -258,10 +258,11 @@ if __name__ == "__main__":
     contigsembs = np.loadtxt(args.contigs_embs, dtype=object)
     embeddings = np.load(args.embs)["arr_0"]
     contig_emb_d = {c: e for c, e in zip(contigsembs, embeddings)}
-    del embeddings
+    
 
     ## 1. Mask the embeddings and process them so they match the binning contigs
     embeddings_bincontigs = np.zeros((len(contignames), embeddings.shape[1]))
+    del embeddings
     embeddings_mask = np.ones(len(contignames), dtype=bool)
     for i, c in enumerate(contignames):
         if c not in contig_emb_d.keys():
@@ -288,6 +289,7 @@ if __name__ == "__main__":
             radius,
             build_graph=False
         )
+
         print("Optimized version finished in %.2f seconds" % (time.time() - t0))
 
         ## Define community of neighbours if a path of contigs within raidus can be walked
@@ -295,7 +297,7 @@ if __name__ == "__main__":
         embs_d[radius]["nhbds"] = get_neighbourhoods(
             embs_d[radius]["neighs"][0], contignames
         )
-
+        
         ## also save neighs where hoods are removed if they are composed of only neighs from diff samples, i.e. hoood : {S1C1, S2C2}
         hoods_to_remove = set()
         for hood, cs in embs_d[radius]["nhbds"].items():
@@ -311,9 +313,8 @@ if __name__ == "__main__":
         )
 
         contigs_without_neighs_mask= ~embeddings_mask |  np.array([True if c in contigs_to_clear_neighs else False for c in contignames ],dtype=bool)
-
-        neighs_clean= np.array([ [] for _ in len(contignames)],dtype=object)
-        neighs_clean[~contigs_without_neighs_mask] = embs_d[radius]["neighs"][0][~contigs_without_neighs_mask]
+        
+        neighs_clean= np.array([ [] if contigs_without_neighs_mask[i] else embs_d[radius]["neighs"][0][i] for i in range(len(contignames))],dtype=object)
 
         embs_d[radius]["neighs_cleared"] = (neighs_clean,None)
 
@@ -357,16 +358,6 @@ if __name__ == "__main__":
             print(
                 f"Neighs where only intra edges hoods are removed by sample saved in {neighs_file}"
             )
-
-            # ## also save neighs split by sample
-            # neighs_file = os.path.join(
-            #     args.neighs_outdir, "neighs_split_object_r_%s.npz" % (str(radius))
-            # )
-            # np.savez_compressed(
-            #     neighs_file,
-            #     embs_d[radius]["neighs_split_by_sample"][0],
-            # )
-            # print(f"Neighs split by sample saved in {neighs_file}")
 
         hoods_clusters_path = os.path.join(
             args.neighs_outdir, "hoods_clusters_r_%s.tsv" % (str(radius))
