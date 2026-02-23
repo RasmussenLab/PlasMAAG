@@ -41,6 +41,7 @@ def find_neighbours_optimized(
 
     print("Embeddings normalized in %.2f seconds"%(time.time()-t_norm_0))
 
+
     neighs = [[] for _ in range(len(contignames))]
     contig_index_lookup = {name: idx for idx, name in enumerate(contignames)}
 
@@ -50,7 +51,7 @@ def find_neighbours_optimized(
     total_contigs = len(contignames)
     contigs_counter = 0
     fraction_contigs = max(1, round(len(contignames) * 0.1))
-
+    t_proces_0 = time.time()
     with torch.inference_mode():
         for cluster_n, contigs_in_cluster in enumerate(ccs_graph_d.values()):
 
@@ -116,11 +117,11 @@ def find_neighbours_optimized(
 
             contigs_counter += len(sorted_contig_idxs)
             if (contigs_counter + 1) > fraction_contigs:
-                print(f"\t{contigs_counter+1}/{total_contigs} contigs processed")
+                print(f"\t{contigs_counter+1}/{total_contigs} contigs processed in {time.time() - t_proces_0}")
                 fraction_contigs += max(1, round(len(contignames) * 0.1))
 
             if (cluster_n + 1) % fraction_clusters == 0:
-                print(f"{cluster_n+1}/{total_clusters} clusters processed")
+                print(f"{cluster_n+1}/{total_clusters} clusters processed in {time.time() - t_proces_0}")
 
     return (np.array(neighs, dtype=object), communities_g)
 
