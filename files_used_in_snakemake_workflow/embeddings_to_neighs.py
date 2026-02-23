@@ -13,12 +13,7 @@ from git_commit import get_git_commit
 import vamb
 
 
-# define functions and classess
-import torch
-import numpy as np
-import networkx as nx
-
-def find_neighbours_optimized_2(
+def find_neighbours_optimized(
     embeddings_bincontigs,
     contignames,
     ccs_graph_d,
@@ -174,11 +169,9 @@ def get_neighbourhoods(neighs_obj, contignames, min_neighs=2):
         for i, cc in enumerate(nx.connected_components(neighbourhoods_g))
         if len(cc) >= min_neighs
     }
-
-    return (
-        hood_cs_d,
-        neighbourhoods_g,
-    )
+    del neighbourhoods_g
+    
+    return hood_cs_d
 
 
 if __name__ == "__main__":
@@ -232,7 +225,6 @@ if __name__ == "__main__":
     
     # Define which component each contig belongs to
     ccs_graph_d = {i: cc for i, cc in enumerate(nx.connected_components(graph))}
-    c_cc_d = {c: i for i, cs in ccs_graph_d.items() for c in cs}
 
     # Define radiuses
     radiuses = [float(r) for r in args.r]
@@ -242,7 +234,6 @@ if __name__ == "__main__":
     if args.contignames != None:
         ## Load the names of the contigs that will be used for binning BE CAREFUL SINCE HE CONTIGNAMES USUALLY USED ONLY APPLUES FOR MIN CONTIG LEN 2000
         contignames = np.loadtxt(args.contignames, dtype=object)
-
     else:
         contignames = np.loadtxt(args.contigs_embs, dtype=object)
 
@@ -257,7 +248,7 @@ if __name__ == "__main__":
         if len(inter) > 1:
             ccs_graph_only_binning_contigs_d[i] = inter
             ccs_graph_only_binning_contigs_d_counts.append(len(inter))
-
+    del ccs_graph_d
     print("Number of clusters with more than 1 contig in the binning set: %i" % len(ccs_graph_only_binning_contigs_d.keys()))
     print("Average (std) contigs per cluster: %.2f (%.2f)" % (np.mean(ccs_graph_only_binning_contigs_d_counts),np.std(ccs_graph_only_binning_contigs_d_counts)))
     
@@ -267,6 +258,7 @@ if __name__ == "__main__":
     contigsembs = np.loadtxt(args.contigs_embs, dtype=object)
     embeddings = np.load(args.embs)["arr_0"]
     contig_emb_d = {c: e for c, e in zip(contigsembs, embeddings)}
+    del embeddings
 
     ## 1. Mask the embeddings and process them so they match the binning contigs
     embeddings_bincontigs = np.zeros((len(contignames), embeddings.shape[1]))
@@ -276,6 +268,7 @@ if __name__ == "__main__":
             embeddings_mask[i] = False
             continue
         embeddings_bincontigs[c_idx_d[c], :] = contig_emb_d[c]
+    del contig_emb_d 
 
     fraction_embedded_contigs = np.sum(embeddings_mask) / len(contignames)
     print("Fraction of contigs with embeddings %.3f" % (fraction_embedded_contigs))
@@ -288,7 +281,7 @@ if __name__ == "__main__":
     for radius in radiuses:
         print("Finding neighbours within radius %.3f" % radius)
         embs_d[radius] = dict()
-        embs_d[radius]["neighs"] = find_neighbours_optimized_2(
+        embs_d[radius]["neighs"] = find_neighbours_optimized(
             embeddings_bincontigs,
             contignames,
             ccs_graph_only_binning_contigs_d,
@@ -297,17 +290,11 @@ if __name__ == "__main__":
         )
         print("Optimized version finished in %.2f seconds" % (time.time() - t0))
 
-        ## extract also neighs split by sample
-        # embs_d[radius]["neighs_split_by_sample"] = split_neighs_per_sample(
-        #     embs_d[radius]["neighs"][0], contignames
-        # )
         ## Define community of neighbours if a path of contigs within raidus can be walked
         # embs_d[radius]["nhbds"], embs_d[radius]["nhbds_g"], hoods_split_bool = (
-        embs_d[radius]["nhbds"], embs_d[radius]["nhbds_g"] = get_neighbourhoods(
+        embs_d[radius]["nhbds"] = get_neighbourhoods(
             embs_d[radius]["neighs"][0], contignames
         )
-
-        #c_hood_d = {c: hood for hood, cs in embs_d[radius]["nhbds"].items() for c in cs}
 
         ## also save neighs where hoods are removed if they are composed of only neighs from diff samples, i.e. hoood : {S1C1, S2C2}
         hoods_to_remove = set()
@@ -322,26 +309,23 @@ if __name__ == "__main__":
             "%i/%i hoods with %i contigs will be removed since they contain only contigs from dif samples"
             % (len(hoods_to_remove),len(embs_d[radius]["nhbds"].keys()), len(contigs_to_clear_neighs))
         )
-        contigs_without_neighs= set(np.where(embeddings_mask == False)[0]).union(
-                set([c_idx_d[c] for c in contigs_to_clear_neighs])
-            )
 
-        neighs_clean = np.array(
-            [ [] if c_i in contigs_without_neighs else embs_d[radius]["neighs"][0][c_i] for c_i in range(len(contignames))  ],
-            dtype=object)
-        nodes_to_remove = set([  contignames[c_i] for c_i in range(len(contignames)) if c_i in contigs_without_neighs ])
+        contigs_without_neighs_mask= ~embeddings_mask |  np.array([True if c in contigs_to_clear_neighs else False for c in contignames ],dtype=bool)
 
-        embs_d[radius]["neighs_cleared"] = (neighs_clean,embs_d[radius]["neighs"][1].remove_nodes_from(nodes_to_remove))
-        
-        
-        embs_d[radius]["nhbds_cleared"], embs_d[radius]["nhbds_cleared_g"] = (
+        neighs_clean= np.array([ [] for _ in len(contignames)],dtype=object)
+        neighs_clean[~contigs_without_neighs_mask] = embs_d[radius]["neighs"][0][~contigs_without_neighs_mask]
+
+        embs_d[radius]["neighs_cleared"] = (neighs_clean,None)
+
+        print("Neighs cleared, now getting cleared neighbourhoods")        
+        embs_d[radius]["nhbds_cleared"] = (
             get_neighbourhoods(embs_d[radius]["neighs_cleared"][0], contignames)
         )
 
         t1 = time.time()
 
         print(
-            "Neighbours and neighbourhoods computed in %.2f seconds" % ((t1 - t0))
+            "Clean neighbours and neighbourhoods computed in %.2f seconds" % ((t1 - t0))
         )
 
         if args.contignames == None:
@@ -350,13 +334,6 @@ if __name__ == "__main__":
             )
         else:
             print("Generating hoods, neighbours and mask neighbours files")
-
-        # neighs, _ = embs_d[radius]["neighs"]
-
-        contigs_w_neighs = np.sum(
-            [1 for row in embs_d[radius]["neighs"][0] if len(row) > 0]
-        )
-        print("%i contigs with neighs" % contigs_w_neighs)
 
         if args.contignames != None:
             neighs_file = os.path.join(
