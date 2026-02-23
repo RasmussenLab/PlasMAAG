@@ -27,7 +27,7 @@ def find_neighbours_optimized(
     # --- Device selection ---
     print("Building graph ",build_graph)
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    print("Running in %s" %("GPU" if torch.cuda.is_available() else "CPU"))
+    print("Running on %s" %("GPU" if torch.cuda.is_available() else "CPU"))
     radius = radius_clustering / 2
     communities_g = nx.Graph()
 
