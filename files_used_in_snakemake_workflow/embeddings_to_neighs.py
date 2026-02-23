@@ -32,10 +32,14 @@ def find_neighbours_optimized(
     communities_g = nx.Graph()
 
     # Normalize and ensure Torch tensor on chosen device
+    print("normalizing embeddings")
+    t_norm_0 = time.time()
     embeddings_bincontigs_nz = vamb.cluster._normalize(embeddings_bincontigs)
     if not torch.is_tensor(embeddings_bincontigs_nz):
         embeddings_bincontigs_nz = torch.as_tensor(embeddings_bincontigs_nz)
     embeddings_bincontigs_nz = embeddings_bincontigs_nz.to(device=device, dtype=torch.float32)
+
+    print("Embeddings normalized in %.2f seconds"%(time.time()-t_norm_0))
 
     neighs = [[] for _ in range(len(contignames))]
     contig_index_lookup = {name: idx for idx, name in enumerate(contignames)}
