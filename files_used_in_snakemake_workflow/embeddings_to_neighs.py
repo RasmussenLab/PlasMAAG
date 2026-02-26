@@ -318,14 +318,6 @@ def find_neighbours_optimized(
             if cluster_n % next_cluster_checkpoint == 0:
                 print(f"{cluster_n}/{total_clusters} clusters processed in {time.time() - t_proces_0:.2f}s")
 
-    # # Optionally deduplicate neighbor lists (preserve order)
-    # if deduplicate_neighs:
-    #     for i in range(len(neighs)):
-    #         li = neighs[i]
-    #         if len(li) > 1:
-    #             seen = set()
-    #             neighs[i] = [x for x in li if not (x in seen or seen.add(x))]
-
     # Build components from DSU if requested
     
     comps = defaultdict(set)
@@ -338,7 +330,6 @@ def find_neighbours_optimized(
         if len(comp) >= min_neighs
     }
 
-    print("%i contigs with neighs"%(len([n for n in neighs if len(n) > 0])))
     # Determine which component IDs to drop
     hoods_to_remove = []
     for hood_id, cs in hood_cs_d.items():
