@@ -1961,12 +1961,12 @@ def load_composition_and_abundance_and_neighs(
     )["arr_0"]
 
     logger.info(f"Only top {neighs_options.top_neighbours} will be kept per contig.")
-    logger.info("Capping neighs")
+    logger.info("Capping neighs.")
     for i in range(len(neighs)):
         if len(neighs[i]) <= neighs_options.top_neighbours:
             continue 
         neighs[i]=neighs[i][:min(neighs_options.top_neighbours,len(neighs[i]))]
-
+    logger.info("Neighs capped.")
     neighs_mask = np.array([ len(lst) > 0 for lst in neighs])
     
     contigs_with_neighs_n = np.sum(neighs_mask)
