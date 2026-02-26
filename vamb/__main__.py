@@ -2541,7 +2541,7 @@ def run_bin_contr_vamb(
         opt.neighs.max_neighs_r
         )
     
-    logger.info("Neighbourhoods before aggregation: %i"%len(find_neighbourhoods(comp_metadata.identifiers,neighs_object).keys()))
+    #logger.info("Neighbourhoods before aggregation: %i"%len(find_neighbourhoods(comp_metadata.identifiers,neighs_object).keys()))
 
     ## optimized clustering
     logger.info("Clustering based on neighbourhoods communities")
