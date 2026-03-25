@@ -61,7 +61,7 @@ The path to the SPAdes output directory (under the assembly_dir column in the ab
 | A metadata file                     | `contigs.paths`                         |
 
 :speaker: PlasMAAG now works with MEGAHIT output!!
-To run the pipeline from already assembled reads with MEGAHIT pass in a whitespace separated file containing the reads and the path to the MEGAHIT contigs for each read pair.
+To run the pipeline from already assembled reads using MEGAHIT, provide a whitespace‑separated file containing the paths to read1, read2, and the MEGAHIT contigs file for each sample.
 ```
 PlasMAAG --reads_and_contigs <reads_and_contigs_file> --output <output_directory> --threads <number_of_threads_to_use>
 ```
