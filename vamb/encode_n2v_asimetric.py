@@ -172,16 +172,14 @@ def make_dataloader_n2v(
             mask_single_ab_and_nonzeroab_si = rpkm_unz_mask & mask_nonzeroab_sample_i    
             if _np.sum((mask_single_ab_and_nonzeroab_si)) == 0:
                 continue
-            
-            
-            mean_ab_s_i = _np.mean(rpkm[mask_single_ab_and_nonzeroab_si,i])
-            std_ab_s_i = _np.std(rpkm[mask_single_ab_and_nonzeroab_si,i])
+                    
+            mean_ab_s_i = _np.mean(rpkm[mask_single_ab_and_nonzeroab_si,i])+1e-6
+            std_ab_s_i = _np.std(rpkm[mask_single_ab_and_nonzeroab_si,i])+1e-6
             rpkm_unz[mask_single_ab_and_nonzeroab_si,i] = (rpkm[mask_single_ab_and_nonzeroab_si,i]-mean_ab_s_i)/std_ab_s_i
             
             #log_vals = _np.log(rpkm[mask_single_ab_and_nonzeroab_si,i])    
             #rpkm_unz[mask_single_ab_and_nonzeroab_si,i] = (log_vals-_np.mean(log_vals))/_np.std(log_vals)
 
-        
         #rpkm_unz=_np.log(rpkm_unz.clip(min=0.001))
         #logger.info("Adding max(log(rpkm_unz),0.001) as input")
         logger.info("Adding rpkm z-score vector as input for contigs only present in one sample %i/%i" %(_np.sum(rpkm_unz_mask),len(rpkm_unz_mask)))
