@@ -67,7 +67,7 @@ if config.get("read_contig") == None and config.get("should_install_genomad") ==
     sys.exit()
 
 # Set default paths for the SPades outputfiles - running the pipeline from allready assembled reads overwrite these values
-#contigs =  OUTDIR / "intermidiate_files/assembly_mapping_output/megahit_{id}/final.contigs.fa"
+#contigs =  OUTDIR / "intermidiate_files/assembly_mapping_output/assembly_{id}/final.contigs.fa"
 
 # Set default values for dictonaries containg information about the input information
 # The way snakemake parses snakefiles means we have to define them even though they will always be present
@@ -75,7 +75,7 @@ sample_id = dict()
 sample_id_path= dict()
 sample_id_path_contigs = dict()
 
-# If read_contig is defined the pipeline will take teh defined megahit ouptut files
+# If read_contig is defined the pipeline will take teh defined assembly ouptut files
 df = pd.read_csv(config["read_contig"], sep=r"\s+", comment="#")
 sample_id = collections.defaultdict(list)
 sample_id_path = collections.defaultdict(dict)
@@ -180,7 +180,7 @@ rule rename_contigs:
     input:
         contigs,
     output:
-        OUTDIR / "intermidiate_files/assembly_mapping_output/megahit_{id}/contigs.renamed.fasta"
+        OUTDIR / "intermidiate_files/assembly_mapping_output/assembly_{id}/contigs.renamed.fasta"
     benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
     threads: 1 #threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = 16 # mem_gb_fn(rulename)
@@ -194,8 +194,8 @@ rule rename_contigs:
         """
 rulename = "filter_sample_contigs"
 rule filter_sample_contigs:
-    input: OUTDIR / "intermidiate_files/assembly_mapping_output/megahit_{id}/contigs.renamed.fasta",
-    output: OUTDIR / "intermidiate_files/assembly_mapping_output/megahit_{id}/contigs.flt.fna.gz"
+    input: OUTDIR / "intermidiate_files/assembly_mapping_output/assembly_{id}/contigs.renamed.fasta",
+    output: OUTDIR / "intermidiate_files/assembly_mapping_output/assembly_{id}/contigs.flt.fna.gz"
     params: script =  SRC_DIR / "concatenate.py"
     benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
     threads: 1 # threads_fn(rulename)
@@ -211,7 +211,7 @@ rule filter_sample_contigs:
 # Cat the contigs together in one file to later map each pair of reads against all the contigs together
 rulename="cat_contigs"
 rule cat_contigs:
-    input: lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/megahit_{id}/contigs.renamed.fasta", id=sample_id["intermidiate_files"]),
+    input: lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/assembly_{id}/contigs.renamed.fasta", id=sample_id["intermidiate_files"]),
     output: OUTDIR / "intermidiate_files/assembly_mapping_output/contigs.flt.fna.gz"
     params: script =  SRC_DIR / "concatenate.py"
     benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files" + rulename
