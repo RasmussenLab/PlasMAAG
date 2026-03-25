@@ -67,7 +67,7 @@ if config.get("read_contig") == None and config.get("should_install_genomad") ==
     sys.exit()
 
 # Set default paths for the SPades outputfiles - running the pipeline from allready assembled reads overwrite these values
-contigs =  OUTDIR / "intermidiate_files/assembly_mapping_output/megahit_{id}/final.contigs.fa"
+#contigs =  OUTDIR / "intermidiate_files/assembly_mapping_output/megahit_{id}/final.contigs.fa"
 
 # Set default values for dictonaries containg information about the input information
 # The way snakemake parses snakefiles means we have to define them even though they will always be present
