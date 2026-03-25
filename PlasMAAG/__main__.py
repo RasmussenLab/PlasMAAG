@@ -231,7 +231,7 @@ def main(
         snakemake_runner.to_print_while_running_snakemake = f"Running snakemake with {threads} thread(s), from paired reads and assembly graph"
 
     # Run the pipeline from the reads and the contigs
-    if reads_and_assembly_dir is not None:
+    if reads_and_contigs is not None:
         snakemake_runner.add_to_config(f"read_contig={reads_and_contigs}")
         snakemake_runner.to_print_while_running_snakemake = f"Running snakemake with {threads} thread(s), from paired reads and assembled contigs"
 
