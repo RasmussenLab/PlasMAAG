@@ -87,7 +87,7 @@ for id, (read1, read2, contigs) in enumerate(zip( df.read1, df.read2, df.contigs
     sample_id[sample].append(id)
     sample_id_path[sample][id] = [read1, read2]
     sample_id_path_contigs[sample][id] = [contigs]
-
+print(sample_id_path_contigs.items())
 # Setting the output paths for the user defined SPades files
 contigs =  lambda wildcards: Path(sample_id_path_contigs["intermidiate_files"][wildcards.id][0]) #/ "final.contigs.fa"
 
