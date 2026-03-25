@@ -54,6 +54,29 @@ Passing in this file means that the pipeline will not assemble the reads but run
     ),
 )
 @click.option(
+    "-c",
+    "--reads_and_contigs",
+    help=f"""\bWhite space separated file containing read pairs and paths to megahit assembled contigs.
+<Notice the header names are required to be: read1, read2 and contigs>
+This file could look like:  
+```
+read1                  read2                  contigs
+path/sample_1/read1    path/sample_1/read2    path/sample_1/final.contigs.fa
+path/sample_2/read1    path/sample_2/read2    path/sample_2/final.contigs.fa
+```
+Passing in this file means that the pipeline will not assemble the reads but run everything after the assembly step. 
+        """,
+    type=WssFile(
+        expected_headers=[
+            "read1",
+            "read2",
+            "contigs",
+        ],
+        none_file_columns=[],
+        
+    ),
+)
+@click.option(
     "-t",
     "--threads",
     help="Number of threads to run the application with",
@@ -111,7 +134,8 @@ def main(
     cli_dryrun,
     snakemake_arguments,
     genomad_db,
-    vamb_arguments
+    vamb_arguments,
+    reads_and_contigs
 ):
     """
     \bPlasMAAG is a tool to recover plasmids and organisms from metagenomic samples.
@@ -145,21 +169,38 @@ def main(
             "--threads is a required argument",
         )
 
-    if reads_and_assembly_dir is not None and reads is not None:
+    if reads_and_assembly_dir is not None and reads is not None and reads_and_contigs is not None:
+        raise click.BadParameter(
+            "All --reads_and_assembly, --reads, and --reads_and_contigs, are used, only use one of them",
+        )
+    if reads_and_assembly_dir is not None and reads is not None :
         raise click.BadParameter(
             "Both --reads_and_assembly and --reads are used, only use one of them",
         )
 
-    if reads_and_assembly_dir is None and reads is None:
+    if reads_and_assembly_dir is not None and reads_and_contigs is not None :
         raise click.BadParameter(
-            "Neither --reads_and_assembly and --reads are used, please define one of them",
+            "Both --reads_and_assembly and --reads_and_contigs are used, only use one of them",
+        )
+    if reads_and_contigs is not None and reads is not None :
+        raise click.BadParameter(
+            "Both --reads_and_contigs, --reads, and --reads_and_contigs, are used, only use one of them",
+        )
+
+    if reads_and_assembly_dir is None and reads is None and reads_and_contigs is None:
+        raise click.BadParameter(
+            "Neither --reads_and_assembly, --reads_and_contigs and --reads are used, please define one of them",
         )
 
     # Check if the environment is setup correctly, if not set it up
     if not environment_manager.check_if_everything_is_setup() and not dryrun:
         environment_manager.setup_environment()
 
-    snakemake_runner = SnakemakeRunner(snakefile="snakefile.smk")
+    if reads_and_contigs is None:
+        snakemake_runner = SnakemakeRunner(snakefile="snakefile.smk")
+    else:
+        snakemake_runner = SnakemakeRunner(snakefile="snakefile_megahit.smk")
+
     snakemake_runner.add_arguments(["-c", str(threads)])
     snakemake_runner.add_arguments(["-p"]) # Print out verbose information about snakemake run
 
@@ -189,11 +230,15 @@ def main(
         snakemake_runner.add_to_config(f"read_assembly_dir={reads_and_assembly_dir}")
         snakemake_runner.to_print_while_running_snakemake = f"Running snakemake with {threads} thread(s), from paired reads and assembly graph"
 
+    # Run the pipeline from the reads and the contigs
+    if reads_and_assembly_dir is not None:
+        snakemake_runner.add_to_config(f"read_contig={reads_and_contigs}")
+        snakemake_runner.to_print_while_running_snakemake = f"Running snakemake with {threads} thread(s), from paired reads and assembled contigs"
+
     if dryrun:
         snakemake_runner.add_arguments(["-n"])
 
     snakemake_runner.run()
-
 
 if __name__ == "__main__":
     main()

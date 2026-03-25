@@ -26,6 +26,7 @@ class WssFile(click.ParamType):
         self.none_file_columns = none_file_columns
         self.spades_column = spades_column
 
+
     def convert(self, value, param, ctx):
         # Read pandas in here, to not slow cli down if pandas is not used
         try:
