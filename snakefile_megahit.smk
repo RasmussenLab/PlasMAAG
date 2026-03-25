@@ -89,7 +89,7 @@ for id, (read1, read2, contigs) in enumerate(zip( df.read1, df.read2, df.contigs
     sample_id_path_contigs[sample][id] = [contigs]
 
 # Setting the output paths for the user defined SPades files
-contigs =  lambda wildcards: Path(sample_id_path_contigs["intermidiate_files"][wildcards.id][0]) / "final.contigs.fa"
+contigs =  lambda wildcards: Path(sample_id_path_contigs["intermidiate_files"][wildcards.id][0]) #/ "final.contigs.fa"
 
 read_fw = lambda wildcards: sample_id_path["intermidiate_files"][wildcards.id][0]
 read_rv =  lambda wildcards: sample_id_path["intermidiate_files"][wildcards.id][1]
