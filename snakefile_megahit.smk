@@ -190,7 +190,7 @@ rule rename_contigs:
         o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
     shell:
         """
-        sed 's/ /_/g' {input} | sed 's/^>/>S{wildcards.id}C/' > {output} 2> {log.log}
+        (zcat {input} 2>/dev/null || cat {input}) | sed 's/ /_/g' | sed 's/^>/>S{wildcards.id}C/' > {output} 2> {log.log}
         """
 rulename = "filter_sample_contigs"
 rule filter_sample_contigs:
