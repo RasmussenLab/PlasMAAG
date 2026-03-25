@@ -63,15 +63,17 @@ The path to the SPAdes output directory (under the assembly_dir column in the ab
 :speaker: PlasMAAG now works with MEGAHIT output!!
 To run the pipeline from already assembled reads using MEGAHIT, provide a whitespace‑separated file containing the paths to read1, read2, and the MEGAHIT contigs file for each sample.
 ```
-PlasMAAG --reads_and_contigs <reads_and_contigs_file> --output <output_directory> --threads <number_of_threads_to_use>
+PlasMAAG --reads_and_contigs <reads_and_contigs> --output <output_directory> --threads <number_of_threads_to_use>
 ```
-The `reads_and_contigs_fil` file could look like:
+The `reads_and_contigs` file could look like:
 ``` 
-read1                          read2    contigs                     assembly_dir                                           
+read1                          read2                         contigs                                           
 im/a/path/to/sample_1/read1    im/a/path/to/sample_1/read2   path/sample_1/MEGAHIT_output/final.contigs.fa  
 im/a/path/to/sample_2/read1    im/a/path/to/sample_2/read2   path/sample_2/MEGAHIT_output/final.contigs.fa          
 ```
  :heavy_exclamation_mark: Notice the header names are required to be: read1, read2 and contigs  
+
+If you would like to run PlasMAAG with the output of another assembler, please open an issue, we are happy to look into it!
 
 To see all options for the program run `PlasMAAG --help`
 
