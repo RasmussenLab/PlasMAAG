@@ -72,6 +72,11 @@ im/a/path/to/sample_1/read1    im/a/path/to/sample_1/read2   path/sample_1/MEGAH
 im/a/path/to/sample_2/read1    im/a/path/to/sample_2/read2   path/sample_2/MEGAHIT_output/final.contigs.fa          
 ```
  :heavy_exclamation_mark: Notice the header names are required to be: read1, read2 and contigs  
+ :heavy_exclamation_mark: If you installed a previous version of PlasMAAG, you will have to update PlasMAAG to make it applicable to MEGAHIT outputs. To do so:
+ ```
+cd PlasMAAG # go to PlasMAAG repository
+git pull # update PlasMAAG latest changes
+```
 
 If you would like to run PlasMAAG with the output of another assembler, please open an issue, we are happy to look into it!
 
@@ -208,6 +213,20 @@ This assembly_dir directory filepath must contain the following 3 files which Sp
 | The assembled contigs               | `contigs.fasta`                         |
 | The simplified assembly graphs      | `assembly_graph_after_simplification.gfa` |
 | A metadata file                     | `contigs.paths`                         |
+
+#### Running from MEGAHIT assembled reads using snakemake directly
+To run the pipeline from already assembled reads with MEGAHIT pass in a whitespace separated file containing the reads and the path to the contigs assembled for each read pair to the config flag in snakemake.
+```
+snakemake --use-conda --cores <number_of_cores> --snakefile <path_to_snakefile> --config read_contig=<reads_and_contigs_file>  output_directory=<output_directory>
+```
+
+The `reads_and_contigs` file could look like:
+``` 
+read1                          read2                         contigs                                           
+im/a/path/to/sample_1/read1    im/a/path/to/sample_1/read2   path/sample_1/MEGAHIT_output/final.contigs.fa  
+im/a/path/to/sample_2/read1    im/a/path/to/sample_2/read2   path/sample_2/MEGAHIT_output/final.contigs.fa          
+```
+ :heavy_exclamation_mark: Notice the header names are required to be: read1, read2 and contigs
 
 ### Running on a cluster with snakemake submiting jobs 
 For running PlasMAAG on a cluster with snakemake submiting jobs see the documentation for snakemake [here](https://snakemake.readthedocs.io/en/v7.19.1/executing/cluster.html)  
