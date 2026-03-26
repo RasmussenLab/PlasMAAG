@@ -5,7 +5,7 @@ click.rich_click.OPTION_GROUPS = {
     "PlasMAAG": [
         {
             "name": "Defining input files: One of these options are required",
-            "options": ["--reads", "--reads_and_assembly_dir"],
+            "options": ["--reads", "--reads_and_assembly_dir", "--reads_and_contigs"],
         },
         {
             "name": "Additional required Arguments",
