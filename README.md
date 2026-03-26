@@ -220,7 +220,7 @@ To run the pipeline from already assembled reads with MEGAHIT pass in a whitespa
 snakemake --use-conda --cores <number_of_cores> --snakefile <path_to_snakefile> --config read_contig=<reads_and_contigs_file>  output_directory=<output_directory>
 ```
 
-The `reads_and_contigs` file could look like:
+The `reads_and_contigs_file` file could look like:
 ``` 
 read1                          read2                         contigs                                           
 im/a/path/to/sample_1/read1    im/a/path/to/sample_1/read2   path/sample_1/MEGAHIT_output/final.contigs.fa  
