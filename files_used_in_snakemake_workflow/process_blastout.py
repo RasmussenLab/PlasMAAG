@@ -41,7 +41,16 @@ def graph_from_blastout(
             return True
 
     def contig_len(contigname):
-        return int(contigname.split("_length_")[1].split("_")[0])
+        """
+        Extract contig length depending on contig origin (SPAdes or MEGAHIT)
+        """
+        split_name=contigname.split("_length_")
+        if(len(split_name)==2):
+            # SPAdes
+            return int(split_name[1].split("_")[0])
+        else:
+            # MEGAHIT
+            return int(contigname.split("_len=")[1])
 
     def merge_ranges(ranges_list):
         # Step 2: Merge overlapping and adjacent ranges
