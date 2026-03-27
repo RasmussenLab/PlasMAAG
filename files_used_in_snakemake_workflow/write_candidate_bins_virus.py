@@ -58,6 +58,12 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--composition",
+        required=True,
+        help="Composition object containing contignames and contig lengths",
+    )
+
+    parser.add_argument(
         "--outdir",
         required=True,
         type=str,
@@ -96,13 +102,17 @@ if __name__ == "__main__":
     # Parse the arguments
     args = parser.parse_args()
     print(args)
+    composition = np.load(args.composition, allow_pickle=True)
+    contignames = composition["identifiers"]
+    contiglengths = composition["lengths"]
+    c_len_d = {c: l for c, l in zip(contignames, contiglengths)}
 
     # 
     plcl_cs_d_ = { cl:set() for cl,c in np.loadtxt(args.cls_pl,dtype=object,skiprows=1)}
     for cl,c in np.loadtxt(args.cls_pl,dtype=object,skiprows=1):
         plcl_cs_d_[cl].add(c)
     plcl_cs_d = split_clusters_by_sample(plcl_cs_d_)
-    plcl_len_d = { cl:np.sum([ int(c.split("length_")[1].split("_")[0]) for c in cs]) for cl,cs in plcl_cs_d.items() }
+    plcl_len_d = { cl:np.sum([ c_len_d[c] for c in cs]) for cl,cs in plcl_cs_d.items() }
     c2plcl={ c:cl for cl,cs in plcl_cs_d.items() if plcl_len_d[cl] >= args.min_plas_len for c in cs}
     pl_cs = set(c2plcl.keys())
     
@@ -112,7 +122,7 @@ if __name__ == "__main__":
         args.cls_org,dtype=object,skiprows=1):
         orgcl_cs_d_[cl].add(c)
     orgcl_cs_d = split_clusters_by_sample(orgcl_cs_d_)
-    orgcl_len_d = { cl:np.sum([ int(c.split("length_")[1].split("_")[0]) for c in cs]) for cl,cs in orgcl_cs_d.items() }
+    orgcl_len_d = { cl:np.sum([ c_len_d[c] for c in cs]) for cl,cs in orgcl_cs_d.items() }
     c2orgcl={ c:cl for cl,cs in orgcl_cs_d.items() if orgcl_len_d[cl] >= args.min_org_len for c in cs}
     org_cs = set(c2orgcl.keys())
 
@@ -121,7 +131,7 @@ if __name__ == "__main__":
         args.cls_vir,dtype=object,skiprows=1):
         vircl_cs_d_[cl].add(c)
     vircl_cs_d = split_clusters_by_sample(vircl_cs_d_)
-    vircl_len_d = { cl:np.sum([ int(c.split("length_")[1].split("_")[0]) for c in cs]) for cl,cs in vircl_cs_d.items() }
+    vircl_len_d = { cl:np.sum([ c_len_d[c] for c in cs]) for cl,cs in vircl_cs_d.items() }
     c2vircl={ c:cl for cl,cs in vircl_cs_d.items() if vircl_len_d[cl] >= args.min_vir_len for c in cs}
     vir_cs = set(c2vircl.keys())
 

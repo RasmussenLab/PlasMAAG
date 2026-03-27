@@ -1906,15 +1906,15 @@ def find_neighbourhoods(contignames,neighs):
 
 
 
-def split_neighbourhoods_by_sample(neighbourhoods):
+def split_neighbourhoods_by_sample(neighbourhoods,binsplitseparator="C"):
     nbhds_split = dict()
     for i,(nbhd_id, nbhd_cs) in enumerate(neighbourhoods.items()):
-        samples_in_nbhd = set([ c.split("C")[0] for c in nbhd_cs ])
+        samples_in_nbhd = set([ c.split(binsplitseparator)[0] for c in nbhd_cs ])
         
         nbhd_S_d = { S:set() for S in samples_in_nbhd}
 
         for c in nbhd_cs:
-            nbhd_S_d[c.split("C")[0]].add(c)
+            nbhd_S_d[c.split(binsplitseparator)[0]].add(c)
 
         # remove 1 contig neighbourhoods
         nbhd_S_clean_d = { S:cs for S,cs in nbhd_S_d.items() if len(cs) > 1 }
@@ -1922,7 +1922,7 @@ def split_neighbourhoods_by_sample(neighbourhoods):
 
 
         for S,cs in nbhd_S_clean_d.items():
-            nbhds_split["%i_%s"%(nbhd_id,S)] = cs
+            nbhds_split["%s%s%i"%(S,str(binsplitseparator),nbhd_id,)] = cs
         
     return nbhds_split
 
