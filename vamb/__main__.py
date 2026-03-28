@@ -2641,16 +2641,16 @@ def run_bin_contr_vamb(
             break
 
     logger.info("%i rounds of reclustering finished with a total of %i clusters above %i"%((_i_+1),len(large_splithoods),max_cl_len))
-    logger.info(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    
 
     logger.info("4. Merge split hoods per sample")
-    logger.info(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    
     _hood_cs_d = hoods_from_neighs(neighs_clean_lat_updated,comp_metadata.identifiers,split_by_sample=False)[0]
 
     _hood_cs_d = remove_intersampleonly_cls(_hood_cs_d)
 
     logger.info("4.1 %i split hoods merged into %i clusters"%(len(splithoods_cs_d.keys()),len(_hood_cs_d.keys())))
-    logger.info(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    
 
     # find how many cs are in the hoods
     contigs_in_latent_communities_mask=np.zeros(len(comp_metadata.identifiers),dtype=bool)
