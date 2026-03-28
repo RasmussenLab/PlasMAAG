@@ -2611,7 +2611,7 @@ def run_bin_contr_vamb(
     logger.info("3. Remove edges from large clusters if cosine distance larger than %s"%(str(opt.neighs.max_neighs_r)))
     
     neighs_clean_lat_updated = np.array(neighs_clean_lat_updated,dtype=object)
-    list_radius_clustering=[0.2,0.15,0.1,0.05,0.04,0.03,0.02,0.01]
+    list_radius_clustering=[0.2,0.15,0.1,0.05,0.04,0.03,0.02,0.01,0.001,0.0001]
     c_idx_d = { c:i for i,c in enumerate(comp_metadata.identifiers)}
 
 
