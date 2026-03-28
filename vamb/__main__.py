@@ -1897,8 +1897,8 @@ def hoods_from_neighs(neighs,contignames,split_by_sample=False):
                 hoods_g.add_edge(contignames[i],contignames[n])
         if (i+1) % 250_000 == 0:
             print(i+1)
-
-    hood_cs_d = {str(i):cs for i,cs in enumerate(nx.connected_components(hoods_g))}
+    hood_cs_d = {"nneighs_%s"%str(i):cs for i,cs in enumerate(nx.connected_components(hoods_g))}
+    
     return hood_cs_d,hoods_g
 
 
