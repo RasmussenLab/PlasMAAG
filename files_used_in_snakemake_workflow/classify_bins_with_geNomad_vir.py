@@ -10,6 +10,9 @@ import vamb
 def split_clusters_by_sample(clusters,binsplitseparator):
     nbhds_split = dict()
     for i, (nbhd_id, nbhd_cs) in enumerate(clusters.items()):
+        if nbhd_id.endswith("_circ"):
+            nbhds_split[nbhd_id]=list(nbhd_cs)[0]
+            continue
         samples_in_nbhd = set([c.split(binsplitseparator)[0] for c in nbhd_cs])
 
         nbhd_S_d = {S: set() for S in samples_in_nbhd}
