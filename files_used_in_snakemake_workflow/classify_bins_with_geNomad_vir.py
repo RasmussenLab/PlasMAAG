@@ -64,7 +64,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--sep",
         type=str,
-        default=None,
         help="Binsplitseparator",
     )
 
@@ -110,7 +109,7 @@ if __name__ == "__main__":
         cl_cs_d[cl].add(c)
 
     if args.split:
-        if args.split == None:
+        if args.sep == None:
             raise ValueError("Binsplit separator should be defined if --split is used")
         print("Splitting clusters per sample")
         cl_cs_d = split_clusters_by_sample(cl_cs_d,args.sep)
