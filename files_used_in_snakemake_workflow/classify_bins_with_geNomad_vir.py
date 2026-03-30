@@ -109,7 +109,8 @@ if __name__ == "__main__":
         cl_cs_d[cl].add(c)
 
     if args.split:
-        assert args.split != None, "Binsplit separator should be defined if --split is used"
+        if args.split == None:
+            raise ValueError("Binsplit separator should be defined if --split is used")
         print("Splitting clusters per sample")
         cl_cs_d = split_clusters_by_sample(cl_cs_d,args.sep)
 
