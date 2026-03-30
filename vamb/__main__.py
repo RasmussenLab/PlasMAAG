@@ -2606,7 +2606,9 @@ def run_bin_contr_vamb(
     splithoods_len_d = { cl:np.sum([ c_len_d[c]  for c in cs]) for cl,cs in splithoods_cs_d.items()}
     large_splithoods = [ cl for cl,l in splithoods_len_d.items() if l > max_cl_len if len(splithoods_cs_d[cl]) > 1]
 
-    logger.info("%i split clusters larger than %i bps"%(len(large_splithoods),max_cl_len))
+    cs_large_splithoods_d = { c:cl.split("C")[1] for cl in large_splithoods for c in splithoods_cs_d[cl]}
+
+    logger.info("%i (%i) split clusters (contigs) larger than %i bps"%(len(large_splithoods),len(cs_large_splithoods_d.keys()),max_cl_len))
 
     logger.info("3. Remove edges from large clusters if cosine distance larger than %s"%(str(opt.neighs.max_neighs_r)))
     
@@ -2616,7 +2618,7 @@ def run_bin_contr_vamb(
 
 
     for _i_,max_neighs_rad_i in enumerate(list_radius_clustering):
-        logger.info("3.%i Round of reclustering over %i cls and max cosine radius= %s"%(_i_,len(large_splithoods),str(max_neighs_rad_i)))
+        logger.info("\t3.%i Round of reclustering over %i cls and max cosine radius= %s"%(_i_,len(large_splithoods),str(max_neighs_rad_i)))
         for large_splithd in large_splithoods:
             latent_masked,neighs_masked_reindexed,neigh_idx_to_neigh_idx_masked, contigs_in_splithd_mask = subset_latents_and_neighs(
                 latent,neighs_clean_lat_updated,splithoods_cs_d[large_splithd],comp_metadata.identifiers,c_idx_d)
