@@ -64,6 +64,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--sep",
         type=str,
+        default=None,
         help="Binsplitseparator",
     )
 
