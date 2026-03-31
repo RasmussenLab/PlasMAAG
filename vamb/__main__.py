@@ -228,6 +228,7 @@ class NeighsOptions:
         "radius_clustering",
         "top_neighbours",
         "max_neighs_r",
+        "max_coms_len"
     ]
     @classmethod
     def from_args(
@@ -241,6 +242,8 @@ class NeighsOptions:
             typeasserted(args.radius_clustering, float),
             typeasserted(args.top_neighbours, int),
             typeasserted(args.max_neighs_r, float),
+            typeasserted(args.max_coms_len, int),
+
         )
 
 
@@ -253,6 +256,7 @@ class NeighsOptions:
         radius_clustering: float = 0.01,
         top_neighbours: int = 50,
         max_neighs_r: float = 0.2,
+        max_coms_len: int = 200000,
     ):
         
         assert isinstance(neighs_path, Path)
@@ -261,13 +265,15 @@ class NeighsOptions:
         assert isinstance(radius_clustering, float)
         assert isinstance(top_neighbours, int)
         assert isinstance(max_neighs_r, float)
-        
+        assert isinstance(max_coms_len, int)
+
         self.margin = margin
         self.radius_clustering = radius_clustering
         self.neighs_path = neighs_path
         self.gamma = gamma
         self.top_neighbours = top_neighbours
         self.max_neighs_r = max_neighs_r
+        self.max_coms_len = max_coms_len
 
 
 class BasicTrainingOptions:
@@ -1132,6 +1138,7 @@ class BinContrVambOptions:
         common = BinnerCommonOptions.from_args(args)
         basic = BasicTrainingOptions.from_args_vae(args)
         neighs = NeighsOptions.from_args(args)
+        
         return cls(
             common,
             VAEOptions.from_args(basic, args),
@@ -2594,7 +2601,7 @@ def run_bin_contr_vamb(
         np.sum(contigs_in_latent_communities_mask))
         )
     
-    max_cl_len=200000 # set as flag
+    max_cl_len=opt.neighs.max_coms_len 
     logger.info("Split clusters per sample, and select bins longer than %s bps for further clustering"%(str(max_cl_len)))
     
     hood_cs_d = latent_communities_cs_d # hoods_from_neighs(neighs,contignames)[0]
@@ -3500,6 +3507,14 @@ def add_contr_vae_arguments(subparser: argparse.ArgumentParser):
         type=float,
         default=0.2,
     )
+
+    contr_vaeos.add_argument(
+        "--max_coms_len",
+        dest="max_coms_len",
+        help="maximum length in bp of the clusters generated with the community based clustering ",
+        type=int,
+        default=200000,
+    )    
     
     return subparser
 
