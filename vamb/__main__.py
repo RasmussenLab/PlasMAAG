@@ -228,6 +228,7 @@ class NeighsOptions:
         "radius_clustering",
         "top_neighbours",
         "max_neighs_r",
+        "max_coms_len"
     ]
     @classmethod
     def from_args(
@@ -241,6 +242,8 @@ class NeighsOptions:
             typeasserted(args.radius_clustering, float),
             typeasserted(args.top_neighbours, int),
             typeasserted(args.max_neighs_r, float),
+            typeasserted(args.max_coms_len, int),
+
         )
 
 
@@ -253,6 +256,7 @@ class NeighsOptions:
         radius_clustering: float = 0.01,
         top_neighbours: int = 50,
         max_neighs_r: float = 0.2,
+        max_coms_len: int = 200000,
     ):
         
         assert isinstance(neighs_path, Path)
@@ -261,13 +265,15 @@ class NeighsOptions:
         assert isinstance(radius_clustering, float)
         assert isinstance(top_neighbours, int)
         assert isinstance(max_neighs_r, float)
-        
+        assert isinstance(max_coms_len, int)
+
         self.margin = margin
         self.radius_clustering = radius_clustering
         self.neighs_path = neighs_path
         self.gamma = gamma
         self.top_neighbours = top_neighbours
         self.max_neighs_r = max_neighs_r
+        self.max_coms_len = max_coms_len
 
 
 class BasicTrainingOptions:
@@ -1132,6 +1138,7 @@ class BinContrVambOptions:
         common = BinnerCommonOptions.from_args(args)
         basic = BasicTrainingOptions.from_args_vae(args)
         neighs = NeighsOptions.from_args(args)
+        
         return cls(
             common,
             VAEOptions.from_args(basic, args),
@@ -1888,21 +1895,18 @@ def find_looners_and_expand_neighs(
     return looner_contigs,neighs_g,hoods_with_looners_cs_d,mask_looners, mask_neighs
 
 
-def find_neighbourhoods(contignames,neighs):
+def hoods_from_neighs(neighs,contignames,split_by_sample=False):
+    hoods_g = nx.Graph()
+    for i,ns in enumerate(neighs):
+        for n in ns:
+            same_sample = contignames[i].split("C")[0] == contignames[n].split("C")[0]
+            if same_sample or not split_by_sample:
+                hoods_g.add_edge(contignames[i],contignames[n])
+        if (i+1) % 250_000 == 0:
+            print(i+1)
+    hood_cs_d = {"nneighs_%s"%str(i):cs for i,cs in enumerate(nx.connected_components(hoods_g))}
     
-    neighbourhoods_g = nx.Graph()
-    for i,neigh_idxs in enumerate(neighs): 
-        c = contignames[i]
-        for neigh_idx in neigh_idxs:
-            c_neigh = contignames[neigh_idx]
-            if  c_neigh == c:
-                continue 
-            #neighbourhoods_g.add_edge(c_neigh,c)
-            neighbourhoods_g.add_edge(c,c_neigh)
-    
-    neighbourhoods_cs_d = { i:cc for i,cc in enumerate(nx.connected_components(neighbourhoods_g))}
-    
-    return neighbourhoods_cs_d
+    return hood_cs_d,hoods_g
 
 
 
@@ -1922,11 +1926,49 @@ def split_neighbourhoods_by_sample(neighbourhoods,binsplitseparator="C"):
 
 
         for S,cs in nbhd_S_clean_d.items():
-            nbhds_split["%s%s%i"%(S,str(binsplitseparator),nbhd_id,)] = cs
+            nbhds_split["%s%s%s"%(S,str(binsplitseparator),str(nbhd_id))] = cs
         
     return nbhds_split
 
+def merge_neighbourhoods_by_sample(neighbourhoods,binsplitseparator="C"):
+    mergedhoods_cs_d = { hood.split(binsplitseparator)[1]:set() for hood in neighbourhoods.keys()}
+    for h,cs in neighbourhoods.items():
+        merged_h=h.split(binsplitseparator)[1]
+        
+        mergedhoods_cs_d[merged_h] = mergedhoods_cs_d[merged_h].union(cs)
+    return mergedhoods_cs_d
 
+def subset_latents_and_neighs(latent,neighs_clean,contigs_in_hood,contignames,c_idx_d):
+    contigs_in_splithd_mask = np.zeros(len(contignames),dtype=bool)
+    contigs_in_splithd_mask[[ c_idx_d[c] for c in contigs_in_hood]] = True
+    contig_idxs_masked= np.arange(len(contignames))[contigs_in_splithd_mask]
+    contig_idxs_masked_set = set(contig_idxs_masked)
+    neigh_idx_to_neigh_idx_masked = {i:int(c_idx) for i,c_idx in enumerate(contig_idxs_masked) }
+    neigh_idx_masked_to_neigh_idx = {c_idx : i for i,c_idx in neigh_idx_to_neigh_idx_masked.items()}
+    neighs_clean_masked=neighs_clean[contigs_in_splithd_mask]
+    
+    for i in range(len(neighs_clean_masked)):
+        if (i+1) % 100_000 == 0:
+            print(i+1)
+
+        if len(neighs_clean_masked[i]) == 0:
+            continue
+        neighs_clean_masked[i] = [ neigh_idx_masked_to_neigh_idx[n] for n in set(neighs_clean_masked[i]).intersection(contig_idxs_masked_set) ]
+
+    neighs_clean_masked=np.array(neighs_clean_masked,dtype=object)
+    return latent[contigs_in_splithd_mask],neighs_clean_masked,neigh_idx_to_neigh_idx_masked,contigs_in_splithd_mask
+
+def remove_intersampleonly_cls(hood_cs_d,binsplitseparator="C"):
+    hoods_to_eval = set([ cl for cl in hood_cs_d.keys()])
+    hoods_to_rm = 0
+    for cl in hoods_to_eval:
+        cs_hood = hood_cs_d[cl]
+        samples_in_hood = set([ c.split(binsplitseparator)[0] for c in cs_hood])
+        if len(samples_in_hood) == len(cs_hood):
+            hoods_to_rm += 1
+            del hood_cs_d[cl]
+    print("%i hoods remved since they contained only contigs from different samples"%(hoods_to_rm))
+    return hood_cs_d
 
 def load_composition_and_abundance_and_neighs(
     vamb_options: GeneralOptions,
@@ -2541,18 +2583,90 @@ def run_bin_contr_vamb(
         opt.neighs.max_neighs_r
         )
     
-    #logger.info("Neighbourhoods before aggregation: %i"%len(find_neighbourhoods(comp_metadata.identifiers,neighs_object).keys()))
+    #logger.info("Neighbourhoods before aggregation: %i"%len(hoods_from_neighs(neighs_object,comp_metadata.identifiers).keys()))
 
     ## optimized clustering
     logger.info("Clustering based on neighbourhoods communities")
     
-    latent_communities_cs_d,looner_mask,contigs_in_latent_communities_mask = cluster_hoods_based(
+    latent_communities_cs_d,looner_mask,contigs_in_latent_communities_mask,neighs_clean_lat_updated = cluster_hoods_based(
         latent,
         neighs_object,
         comp_metadata.identifiers,
         opt.common.output.binsplitter.splitter,
         opt.neighs.radius_clustering
         )
+    
+    logger.info("%i community clusters with %i contigs without considering looners"%(
+        len([k for k in latent_communities_cs_d.keys() if "neigh" in k]),
+        np.sum(contigs_in_latent_communities_mask))
+        )
+    
+    max_cl_len=opt.neighs.max_coms_len 
+    logger.info("Split clusters per sample, and select bins longer than %s bps for further clustering"%(str(max_cl_len)))
+    
+    hood_cs_d = latent_communities_cs_d # hoods_from_neighs(neighs,contignames)[0]
+    splithoods_cs_d = split_neighbourhoods_by_sample(hood_cs_d)
+    logger.info("%i clusters split into %i bins"%(len(latent_communities_cs_d.keys()),len(splithoods_cs_d.keys())))
+
+    c_len_d = { c:l for c,l in zip(comp_metadata.identifiers,comp_metadata.lengths)}
+    splithoods_len_d = { cl:np.sum([ c_len_d[c]  for c in cs]) for cl,cs in splithoods_cs_d.items()}
+    large_splithoods = [ cl for cl,l in splithoods_len_d.items() if l > max_cl_len if len(splithoods_cs_d[cl]) > 1]
+
+    cs_large_splithoods_d = { c:cl.split("C")[1] for cl in large_splithoods for c in splithoods_cs_d[cl]}
+
+    logger.info("%i (%i) bins (contigs) larger than %i bps"%(len(large_splithoods),len(cs_large_splithoods_d.keys()),max_cl_len))
+
+    logger.info("3. Remove edges from large bins if cosine distance larger than %s"%(str(opt.neighs.max_neighs_r)))
+    
+    neighs_clean_lat_updated = np.array(neighs_clean_lat_updated,dtype=object)
+    list_radius_clustering=[0.2,0.15,0.1,0.05,0.04,0.03,0.02,0.01,0.001,0.0001]
+    c_idx_d = { c:i for i,c in enumerate(comp_metadata.identifiers)}
+
+
+    for _i_,max_neighs_rad_i in enumerate(list_radius_clustering):
+        logger.info("\t3.%i Round of reclustering over %i bins and max cosine radius= %s"%(_i_,len(large_splithoods),str(max_neighs_rad_i)))
+        for large_splithd in large_splithoods:
+            latent_masked,neighs_masked_reindexed,neigh_idx_to_neigh_idx_masked, contigs_in_splithd_mask = subset_latents_and_neighs(
+                latent,neighs_clean_lat_updated,splithoods_cs_d[large_splithd],comp_metadata.identifiers,c_idx_d)
+            neighs_masked_reindexed_clean = clean_neighs_with_latents(
+                latent_masked,
+                neighs_masked_reindexed,
+                max_neighs_rad_i,
+                silent=True
+                )
+            
+            for _c_i_,ns in enumerate(neighs_masked_reindexed_clean):
+                
+                neighs_masked_reindexed_clean_reverted_c_i_ = [  neigh_idx_to_neigh_idx_masked[n]  for n in ns ]
+                neighs_clean_lat_updated[neigh_idx_to_neigh_idx_masked[_c_i_]]=neighs_masked_reindexed_clean_reverted_c_i_
+
+        splithoods_cs_d = hoods_from_neighs(neighs_clean_lat_updated,comp_metadata.identifiers,split_by_sample=True)[0]
+        splithoods_len_d = { cl:np.sum([ c_len_d[c]  for c in cs]) for cl,cs in splithoods_cs_d.items()}
+        large_splithoods = [ cl for cl,l in splithoods_len_d.items() if l > max_cl_len ]
+        
+        if len(large_splithoods) == 0:
+            logger.info("All large bins have been split!!")
+            break
+
+    logger.info("%i rounds of reclustering finished with a total of %i bins above %i"%((_i_+1),len(large_splithoods),max_cl_len))
+    
+
+    logger.info("4. Merge bins per sample")
+    
+    _hood_cs_d = hoods_from_neighs(neighs_clean_lat_updated,comp_metadata.identifiers,split_by_sample=False)[0]
+
+    _hood_cs_d = remove_intersampleonly_cls(_hood_cs_d)
+
+    logger.info("4.1 %i bins merged into %i clusters"%(len(splithoods_cs_d.keys()),len(_hood_cs_d.keys())))
+
+    # find how many cs are in the hoods
+    contigs_in_latent_communities_mask=np.zeros(len(comp_metadata.identifiers),dtype=bool)
+    contigs_in_latent_communities = set([c for cs in _hood_cs_d.values() for c in cs])
+    for c in contigs_in_latent_communities:
+        contigs_in_latent_communities_mask[c_idx_d[c]]=True
+
+    logger.info("4.1 %i contigs in community based clustering without considering looners"%len(contigs_in_latent_communities)) 
+
     logger.info("Clustering baased on the neighbourhoods communities finished")
 
     
@@ -2562,7 +2676,8 @@ def run_bin_contr_vamb(
     write_clusters(
         opt.common.output.binsplitter,
         str(opt.common.general.out_dir.joinpath("tmp/vae_clusters_community_based")),
-        latent_communities_cs_d
+        _hood_cs_d
+        
     )
 
     logger.info(
@@ -2586,7 +2701,7 @@ def run_bin_contr_vamb(
     )
     
     # merge the within and outside clusters and ensure tehre are not repeats and missing contigs
-    merged_cl_cs_d = latent_communities_cs_d.copy()
+    merged_cl_cs_d = _hood_cs_d.copy()
 
 
     for cl,cs in cls_outside_coms_density_cs_d.items():
@@ -2623,13 +2738,15 @@ def run_bin_contr_vamb(
 def clean_neighs_with_latents(
     latent,
     neighs,
-    max_radius=0.2
+    max_radius=0.2,
+    silent=False
 ):
     """
     Given contig latent vectors and neighbor lists, remove neighbors whose
     cosine distance (normalized angular distance) is greater than max_radius.
     """
-    logger.info(f"Breaking neighbour connections if further than {max_radius} normalized cosine distance")
+    if not silent:
+        logger.info(f"Breaking neighbour connections if further than {max_radius} normalized cosine distance")
 
     n_contigs = latent.shape[0]
     latent_nz = vamb.cluster._normalize(latent)
@@ -2659,9 +2776,9 @@ def clean_neighs_with_latents(
             # Map local indices back to global indices
             kept_global_idxs = local_idxs[within].tolist()
             neighs_clean[contig_idx] = kept_global_idxs
-    
-    logger.info(f"{sum(len(n) for n in neighs)} neighs before cleaning with latents")
-    logger.info(f"{sum(len(n) for n in neighs_clean)} neighs after cleaning with latents")
+    if not silent:
+        logger.info(f"{sum(len(n) for n in neighs)} neighs before cleaning with latents")
+        logger.info(f"{sum(len(n) for n in neighs_clean)} neighs after cleaning with latents")
     return neighs_clean
         
         
@@ -2686,6 +2803,7 @@ def cluster_hoods_based(
     latent_nz = vamb.cluster._normalize(latent)
 
     ## For each contig latent, find the contigs that are within a distance, and link them
+    lat_neighs_added=0
     for i in range(len(latent)):
         distances = vamb.cluster._calc_distances(latent_nz,i)
         mask_ = torch.ones(len(latent), dtype=torch.bool)
@@ -2700,18 +2818,14 @@ def cluster_hoods_based(
         else:
             for lat_neigh in np.where(within_radius)[0]:
                 latent_communities_g.add_edge(contignames[i],contignames[lat_neigh])
+                if lat_neigh not in neighs_graph:
+                    neighs[i].append(lat_neigh)
+                    lat_neighs_added +=1
             
             for neigh_idx in neighs_graph:
                 latent_communities_g.add_edge(contignames[i],contignames[neigh_idx])
-            #contigs_in_latent_communities_mask[i]=True
+    logger.info("%i neighs added based on latent distances"%lat_neighs_added)
         
-    
-    
-    # latent_communities_cs_d = {
-    #     "nneighs_%i" % i if len(cs) > 1 else "looner_%i"%i: cs
-    #     for i, cs in enumerate(nx.connected_components(latent_communities_g))
-        
-    # }
     ## For each cluster only composed by contigs from different samples, i.e. there is only one contig from each sample present in the cluster,
     ## remove those clusters since no graph information is used.
     latent_communities_cs_d_NOT_CLEAN = {
@@ -2755,7 +2869,10 @@ def cluster_hoods_based(
     latent_communities_g.remove_nodes_from(nodes_to_remove)
 
     logger.info("%i (%i) edges (nodes) have been removed since they were part of clusters containing only intersample contigs"%(len(edges_to_remove),len(nodes_to_remove)))
-    
+    logger.info(
+        "Neighbourhoods after removing only intersample hoods: %i" % (len([cl for cl in latent_communities_cs_d.keys() if cl.startswith("nneighs_")]))
+    )
+
 
 
     contigs_in_withinradiusclusters_n = np.sum([len(cs) for cs in latent_communities_cs_d.values() if len(cs) > 1 ])
@@ -2780,8 +2897,7 @@ def cluster_hoods_based(
         "Aggregated neighbourhoods: %i" % (len([cl for cl in latent_communities_cs_d.keys() if cl.startswith("nneighs_")]))
     )
 
-    return latent_communities_cs_d,looner_mask,contigs_in_latent_communities_mask
-
+    return latent_communities_cs_d,looner_mask,contigs_in_latent_communities_mask,neighs
 
     
 def neighs_within_radius(
@@ -3391,6 +3507,14 @@ def add_contr_vae_arguments(subparser: argparse.ArgumentParser):
         type=float,
         default=0.2,
     )
+
+    contr_vaeos.add_argument(
+        "--max_coms_len",
+        dest="max_coms_len",
+        help="maximum length in bp of the clusters generated with the community based clustering ",
+        type=int,
+        default=200000,
+    )    
     
     return subparser
 

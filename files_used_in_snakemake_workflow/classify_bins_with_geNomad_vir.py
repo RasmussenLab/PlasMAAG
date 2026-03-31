@@ -7,15 +7,18 @@ from git_commit import get_git_commit
 import vamb
 
 
-def split_clusters_by_sample(clusters):
+def split_clusters_by_sample(clusters,binsplitseparator):
     nbhds_split = dict()
     for i, (nbhd_id, nbhd_cs) in enumerate(clusters.items()):
-        samples_in_nbhd = set([c.split("C")[0] for c in nbhd_cs])
+        if nbhd_id.endswith("_circ"):
+            nbhds_split[nbhd_id]=nbhd_cs
+            continue
+        samples_in_nbhd = set([c.split(binsplitseparator)[0] for c in nbhd_cs])
 
         nbhd_S_d = {S: set() for S in samples_in_nbhd}
 
         for c in nbhd_cs:
-            nbhd_S_d[c.split("C")[0]].add(c)
+            nbhd_S_d[c.split(binsplitseparator)[0]].add(c)
 
         for S, cs in nbhd_S_d.items():
             nbhds_split["%s_%s" % (str(nbhd_id), S)] = cs
@@ -62,6 +65,12 @@ if __name__ == "__main__":
         help="if set, contig score aggregation is applied per bin",
     )
     parser.add_argument(
+        "--sep",
+        type=str,
+        help="Binsplitseparator",
+    )
+
+    parser.add_argument(
         "--thr",
         default=0.7,
         type=float,
@@ -103,8 +112,10 @@ if __name__ == "__main__":
         cl_cs_d[cl].add(c)
 
     if args.split:
+        if args.sep == None:
+            raise ValueError("Binsplit separator should be defined if --split is used")
         print("Splitting clusters per sample")
-        cl_cs_d = split_clusters_by_sample(cl_cs_d)
+        cl_cs_d = split_clusters_by_sample(cl_cs_d,args.sep)
 
     cl_genomadscores_d = {}
     thr_circ = min(args.thr_circ, args.thr)
