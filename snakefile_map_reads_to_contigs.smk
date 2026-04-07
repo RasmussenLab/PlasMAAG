@@ -152,7 +152,7 @@ rule sort:
         o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
     shell:
         """
-    samtools sort --threads {threads} {input[0]} -o {output} 2> {log.log}
+    samtools sort --threads {threads} {input} -o {output} 2> {log.log}
     samtools index {output} 2>> {log.log}
     """
 
