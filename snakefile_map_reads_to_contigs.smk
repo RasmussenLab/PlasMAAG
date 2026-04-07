@@ -140,6 +140,7 @@ rulename="sort"
 rule sort:
     input:
         OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam",
+        OUTDIR / "intermidiate_files/rule_completed_checks/mapped/Strobealign_bam_default_{id}.finished"
     output:
         OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort",
     threads: threads_fn(rulename)
@@ -151,7 +152,7 @@ rule sort:
         o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
     shell:
         """
-    samtools sort --threads {threads} {input} -o {output} 2> {log.log}
+    samtools sort --threads {threads} {input[0]} -o {output} 2> {log.log}
     samtools index {output} 2>> {log.log}
     """
 
