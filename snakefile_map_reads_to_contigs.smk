@@ -156,7 +156,7 @@ rule sort:
     shell:
         """
     samtools sort --threads {threads} {input[0]} -o {output[0]} 2> {log.log}
-    samtools index {output} 2>> {log.log}
+    samtools index {output[0]} 2>> {log.log}
     touch {output[1]}
     """
 
