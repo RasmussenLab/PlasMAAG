@@ -140,7 +140,7 @@ rulename="sort"
 rule sort:
     input:
         OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam",
-        OUTDIR / "intermidiate_files/rule_completed_checks/mapped/Strobealign_bam_default_{id}.finished"
+        #OUTDIR / "intermidiate_files/rule_completed_checks/mapped/Strobealign_bam_default_{id}.finished"
     output:
         OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort",
     threads: threads_fn(rulename)
