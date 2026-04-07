@@ -175,7 +175,7 @@ rule coverage:
         e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_err",
         o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
     shell:
-        "samtools coverage {input} > {output[0]} 2> {log.log}"
+        "samtools coverage {input[0]} > {output[0]} 2> {log.log}"
 
 # 7. Run vamb to merge, split, and expand the hoods
 rulename = "run_VAE"
