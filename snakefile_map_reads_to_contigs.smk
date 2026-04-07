@@ -156,6 +156,7 @@ rule sort:
     """
 
 # extract coverage 
+rulename="coverage"
 rule coverage:
     input:
         OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort",
