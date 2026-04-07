@@ -133,7 +133,7 @@ rule Strobealign_bam_default:
         conda: THIS_FILE_DIR / "envs/strobe_env.yaml"
         shell:
             """
-            strobealign -t {threads} {input.contigs} {input.fw} {input.rv} > {output} 2> {log.log}
+            strobealign -t {threads} {input.contigs} {input.fw} {input.rv} > {output[0]} 2> {log.log}
             touch {output[1]}
             """
 
@@ -145,6 +145,7 @@ rule sort:
         OUTDIR / "intermidiate_files/rule_completed_checks/mapped/Strobealign_bam_default_{id}.finished"
     output:
         OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort",
+        OUTDIR / "intermidiate_files/rule_completed_checks/mapped_sort/sort_{id}.finished"
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
     benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
@@ -154,8 +155,9 @@ rule sort:
         o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
     shell:
         """
-    samtools sort --threads {threads} {input[0]} -o {output} 2> {log.log}
+    samtools sort --threads {threads} {input[0]} -o {output[0]} 2> {log.log}
     samtools index {output} 2>> {log.log}
+    touch {output[1]}
     """
 
 # extract coverage 
@@ -163,6 +165,7 @@ rulename="coverage"
 rule coverage:
     input:
         OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort",
+        OUTDIR / "intermidiate_files/rule_completed_checks/mapped/Strobealign_bam_default_{id}.finished"
     output:
         OUTDIR / "intermidiate_files/assembly_mapping_output/coverages/{id}_coverage.txt",
     threads: threads_fn("coverage")
@@ -172,7 +175,7 @@ rule coverage:
         e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_err",
         o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
     shell:
-        "samtools coverage {input} > {output} 2> {log.log}"
+        "samtools coverage {input} > {output[0]} 2> {log.log}"
 
 # 7. Run vamb to merge, split, and expand the hoods
 rulename = "run_VAE"
@@ -181,6 +184,7 @@ rule run_VAE:
         contigs = "/home/projects/cu_10108/people/paupie/plasmaag_bangladesh_all_samples_wo_birth_1_2_2_2_based_on_louvain/results/candidate_plasmids_and_phage_contigs.fna",
         bamfiles = lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort", id=sample_id["intermidiate_files"]),
         coverages = lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/coverages/{id}_coverage.txt", id=sample_id["intermidiate_files"])
+        bamfiles = lambda wildcards: expand(OUTDIR / "intermidiate_files/rule_completed_checks/mapped_sort/sort_{id}.finished", id=sample_id["intermidiate_files"]),
     output:
         directory = directory(os.path.join(OUTDIR,"intermidiate_files", 'contrastive_VAE')),
         finished = os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/run_VAE.finished'),
