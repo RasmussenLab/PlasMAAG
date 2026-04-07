@@ -119,7 +119,7 @@ rule Strobealign_bam_default:
         input:
             fw = read_fw,
             rv = read_rv,
-            contigs = "/home/projects/ku_00041/data/EMBARQ/cache/binning/plasmaag_outdir_221/results/contigs_in_MQ_genomes_plasmids_and_virus.fna"
+            contigs = "/home/projects/cu_10108/people/paupie/plasmaag_bangladesh_all_samples_wo_birth_1_2_2_2_based_on_louvain/results/candidate_plasmids_and_phage_contigs.fna"
         output:
             OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam"
         threads: threads_fn(rulename)
@@ -174,7 +174,7 @@ rule coverage:
 rulename = "run_VAE"
 rule run_VAE:
     input:
-        contigs = "/home/projects/ku_00041/data/EMBARQ/cache/binning/plasmaag_outdir_221/results/contigs_in_MQ_genomes_plasmids_and_virus.fna",
+        contigs = "/home/projects/cu_10108/people/paupie/plasmaag_bangladesh_all_samples_wo_birth_1_2_2_2_based_on_louvain/results/candidate_plasmids_and_phage_contigs.fna",
         bamfiles = lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort", id=sample_id["intermidiate_files"])
         coverages = lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/coverages/{id}_coverage.txt", id=sample_id["intermidiate_files"])
     output:
