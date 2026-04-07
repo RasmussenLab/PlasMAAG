@@ -155,6 +155,20 @@ rule sort:
     samtools index {output} 2>> {log.log}
     """
 
+# extract coverage 
+rule coverage:
+    input:
+        OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort",
+    output:
+        OUTDIR / "intermidiate_files/assembly_mapping_output/coverages/{id}_coverage.txt",
+    threads: threads_fn("coverage")
+    resources: walltime = walltime_fn("coverage"), mem_gb = mem_gb_fn("coverage")
+    log:
+        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename,
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
+    shell:
+        "samtools coverage {input} > {output} 2> {log.log}}"
 
 # 7. Run vamb to merge, split, and expand the hoods
 rulename = "run_VAE"
