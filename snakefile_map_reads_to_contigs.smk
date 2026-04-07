@@ -121,7 +121,8 @@ rule Strobealign_bam_default:
             rv = read_rv,
             contigs = "/home/projects/cu_10108/people/paupie/plasmaag_bangladesh_all_samples_wo_birth_1_2_2_2_based_on_louvain/results/candidate_plasmids_and_phage_contigs.fna"
         output:
-            OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam"
+            OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam",
+            OUTDIR / "intermidiate_files/rule_completed_checks/mapped/Strobealign_bam_default_{id}.finished"
         threads: threads_fn(rulename)
         resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
         benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
@@ -133,6 +134,7 @@ rule Strobealign_bam_default:
         shell:
             """
             strobealign -t {threads} {input.contigs} {input.fw} {input.rv} > {output} 2> {log.log}
+            touch {output[1]}
             """
 
 # Sort the bam files and index them
@@ -140,7 +142,7 @@ rulename="sort"
 rule sort:
     input:
         OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam",
-        #OUTDIR / "intermidiate_files/rule_completed_checks/mapped/Strobealign_bam_default_{id}.finished"
+        OUTDIR / "intermidiate_files/rule_completed_checks/mapped/Strobealign_bam_default_{id}.finished"
     output:
         OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort",
     threads: threads_fn(rulename)
@@ -152,7 +154,7 @@ rule sort:
         o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
     shell:
         """
-    samtools sort --threads {threads} {input} -o {output} 2> {log.log}
+    samtools sort --threads {threads} {input[0]} -o {output} 2> {log.log}
     samtools index {output} 2>> {log.log}
     """
 
