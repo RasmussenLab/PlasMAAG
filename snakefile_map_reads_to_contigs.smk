@@ -175,7 +175,7 @@ rulename = "run_VAE"
 rule run_VAE:
     input:
         contigs = "/home/projects/cu_10108/people/paupie/plasmaag_bangladesh_all_samples_wo_birth_1_2_2_2_based_on_louvain/results/candidate_plasmids_and_phage_contigs.fna",
-        bamfiles = lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort", id=sample_id["intermidiate_files"])
+        bamfiles = lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort", id=sample_id["intermidiate_files"]),
         coverages = lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/coverages/{id}_coverage.txt", id=sample_id["intermidiate_files"])
     output:
         directory = directory(os.path.join(OUTDIR,"intermidiate_files", 'contrastive_VAE')),
