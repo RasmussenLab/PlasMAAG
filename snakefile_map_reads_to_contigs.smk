@@ -119,7 +119,7 @@ rule Strobealign_bam_default:
         input:
             fw = read_fw,
             rv = read_rv,
-            contigs = "/home/projects/cu_10108/people/paupie/plasmaag_bangladesh_all_samples_wo_birth_1_2_2_2_based_on_louvain/results/candidate_plasmids_and_phage_contigs.fna"
+            contigs = "/home/projects/cu_10108/people/paupie/plasmaag_bangladesh_all_samples_wo_birth_1_2_2_2_based_on_louvain/results/candidate_plasmids_and_phage_and_mq_organisms_contigs.fna"
         output:
             OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam",
             OUTDIR / "intermidiate_files/rule_completed_checks/mapped/Strobealign_bam_default_{id}.finished"
@@ -165,9 +165,10 @@ rulename="coverage"
 rule coverage:
     input:
         OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort",
-        OUTDIR / "intermidiate_files/rule_completed_checks/mapped/Strobealign_bam_default_{id}.finished"
+        OUTDIR / "intermidiate_files/rule_completed_checks/mapped_sort/sort_{id}.finished"
     output:
         OUTDIR / "intermidiate_files/assembly_mapping_output/coverages/{id}_coverage.txt",
+        OUTDIR / "intermidiate_files/rule_completed_checks/coverage/coverage_{id}.finished"
     threads: threads_fn("coverage")
     resources: walltime = walltime_fn("coverage"), mem_gb = mem_gb_fn("coverage")
     log:
@@ -181,9 +182,9 @@ rule coverage:
 rulename = "run_VAE"
 rule run_VAE:
     input:
-        contigs = "/home/projects/cu_10108/people/paupie/plasmaag_bangladesh_all_samples_wo_birth_1_2_2_2_based_on_louvain/results/candidate_plasmids_and_phage_contigs.fna",
+        contigs = "/home/projects/cu_10108/people/paupie/plasmaag_bangladesh_all_samples_wo_birth_1_2_2_2_based_on_louvain/results/candidate_plasmids_and_phage_and_mq_organisms_contigs.fna",
         bamfiles = lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort", id=sample_id["intermidiate_files"]),
-        coverages = lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/coverages/{id}_coverage.txt", id=sample_id["intermidiate_files"]),
+        coverages_log = lambda wildcards: expand(OUTDIR / "intermidiate_files/rule_completed_checks/coverage/coverage_{id}.finished", id=sample_id["intermidiate_files"]),
         bamfiles_log = lambda wildcards: expand(OUTDIR / "intermidiate_files/rule_completed_checks/mapped_sort/sort_{id}.finished", id=sample_id["intermidiate_files"])
     output:
         directory = directory(os.path.join(OUTDIR,"intermidiate_files", 'contrastive_VAE')),
