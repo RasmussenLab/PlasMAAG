@@ -182,8 +182,8 @@ rule coverage:
         """
 
 # 7. Run vamb to merge, split, and expand the hoods
-rulename = "run_VAE"
-rule run_VAE:
+rulename = "run_contrastive_VAE"
+rule run_contrastive_VAE:
     input:
         contigs = "/home/projects/cu_10108/people/paupie/plasmaag_bangladesh_all_samples_wo_birth_1_2_2_2_based_on_louvain/results/candidate_plasmids_and_phage_and_mq_organisms_contigs.fna",
         bamfiles = lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort", id=sample_id["intermidiate_files"]),
