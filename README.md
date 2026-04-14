@@ -150,7 +150,8 @@ candidate_virus.tsv # The candidate viruses
 candidate_plasmids # Directory with the candidate plasmids fasta files
 candidate_genomes # Directory with the candidate chromosomes fasta files
 candidate_viruses # Directory with the candidate virus fasta files
-scores.tsv # The aggregated scores for each plasmid and genome cluster
+plasmid_scores.tsv # The aggregated scores for each plasmid cluster
+virus_organism_scores.tsv # The aggregated scores for each organism and virus cluster
 ```
 
 ## Advanced
