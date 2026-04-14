@@ -283,84 +283,102 @@ if __name__ == "__main__":
             ccs_graph_only_binning_contigs_d_counts.append(len(inter))
     del ccs_graph_d
     print("Number of clusters with more than 1 contig in the binning set: %i" % len(ccs_graph_only_binning_contigs_d.keys()))
-    print("Average (std) contigs per cluster: %.2f (%.2f)" % (np.mean(ccs_graph_only_binning_contigs_d_counts),np.std(ccs_graph_only_binning_contigs_d_counts)))
+    if len(ccs_graph_only_binning_contigs_d.keys()) > 0:
+        print("Average (std) contigs per cluster: %.2f (%.2f)" % (np.mean(ccs_graph_only_binning_contigs_d_counts),np.std(ccs_graph_only_binning_contigs_d_counts)))
     
     c_idx_d = {c: i for i, c in enumerate(contignames)}
 
     # Load the embeddings, and the contigs that are represented in those embeddings
     contigsembs = np.loadtxt(args.contigs_embs, dtype=object)
     embeddings = np.load(args.embs)["arr_0"]
-    contig_emb_d = {c: e for c, e in zip(contigsembs, embeddings)}
-    
 
-    ## 1. Mask the embeddings and process them so they match the binning contigs
-    embeddings_bincontigs = np.zeros((len(contignames), embeddings.shape[1]))
-    del embeddings
-    embeddings_mask = np.ones(len(contignames), dtype=bool)
-    for i, c in enumerate(contignames):
-        if c not in contig_emb_d.keys():
-            embeddings_mask[i] = False
-            continue
-        embeddings_bincontigs[c_idx_d[c], :] = contig_emb_d[c]
-    del contig_emb_d 
-
-    fraction_embedded_contigs = np.sum(embeddings_mask) / len(contignames)
-    print("Fraction of contigs with embeddings %.3f" % (fraction_embedded_contigs))
-
-    ## 2. Compute cosine distances all against all, only for considered AND contigs and contigs taht are embedded
-    t0 = time.time()
-
-    ## 3. For each contig, define as neighbours the ones that are within a radius
-    embs_d = dict()
-    for radius in radiuses:
-        print("Finding neighbours within radius %.3f" % radius)
-        embs_d[radius] = dict()
-        embs_d[radius]["neighs"] = find_neighbours_optimized(
-            embeddings_bincontigs,
-            contignames,
-            ccs_graph_only_binning_contigs_d,
-            radius,
-            build_graph=False,
-            binsplit_separator="C"
-        )        
-
-        print("Optimized version finished in %.2f seconds" % (time.time() - t0))
-        print("%i contigs with neighs"%(len([n for n in embs_d[radius]["neighs"][0] if len(n) > 0])))
-        if args.contignames != None:
-            
-            neighs_file = os.path.join(
-                args.neighs_outdir,
-                "neighs_intraonly_rm_object_r_%s.npz" % (str(radius)),
-            )
-            np.savez_compressed(
-                neighs_file,
-                embs_d[radius]["neighs"][0],
-            )
-            print(
-                f"Neighs where only intra edges hoods are removed by sample saved in {neighs_file}"
-            )
-
-        ## also save cleared hoods where only intra edges hoods are removed
-        hoods_clusters_path = os.path.join(
-            args.neighs_outdir, "hoods_intraonly_rm_clusters_r_%s.tsv" % (str(radius))
+    if len(embeddings) == 0:
+        print("Fastnode2vec embeddings are empty, so no neighs will be defined.")
+        neighs_file = os.path.join(
+            args.neighs_outdir,
+            "neighs_intraonly_rm_object_r_%s.npz" % (str(radiuses[0])),
         )
-
-        with open(hoods_clusters_path, "w") as f:
-            f.write("clustername\tcontigname\n")
-            for hood_i, cs in embs_d[radius]["neighs"][1].items():
-                for c in cs:
-                    f.write("%s\t%s\n" % (hood_i, c))
-
+        np.savez_compressed(
+            neighs_file,
+            np.array([ [] for _ in contignames],dtype=object),
+        )
         print(
-            f"Hoods where only intra edges hoods are removed by sample clusters saved in {hoods_clusters_path}"
+            f"(Empty) neighs where only intra edges hoods are removed by sample saved in {neighs_file}"
         )
 
-    # Save the dictionary to a Pickle file
-    # path_dict = os.path.join(embs_dir, "tmp/embs_d_%s.pkl"%(date))
-    path_dict = os.path.join("%s/embs_d.pkl" % args.neighs_outdir)
+    else:
+        
+        contig_emb_d = {c: e for c, e in zip(contigsembs, embeddings)}
+        
 
-    with open(path_dict, "wb") as pickle_file:
-        pickle.dump(embs_d, pickle_file)
+        ## 1. Mask the embeddings and process them so they match the binning contigs
+        embeddings_bincontigs = np.zeros((len(contignames), embeddings.shape[1]))
+        del embeddings
+        embeddings_mask = np.ones(len(contignames), dtype=bool)
+        for i, c in enumerate(contignames):
+            if c not in contig_emb_d.keys():
+                embeddings_mask[i] = False
+                continue
+            embeddings_bincontigs[c_idx_d[c], :] = contig_emb_d[c]
+        del contig_emb_d 
 
-    print(f"Dictionary saved to {path_dict}")
+        fraction_embedded_contigs = np.sum(embeddings_mask) / len(contignames)
+        print("Fraction of contigs with embeddings %.3f" % (fraction_embedded_contigs))
+
+        ## 2. Compute cosine distances all against all, only for considered AND contigs and contigs taht are embedded
+        t0 = time.time()
+
+        ## 3. For each contig, define as neighbours the ones that are within a radius
+        embs_d = dict()
+        for radius in radiuses:
+            print("Finding neighbours within radius %.3f" % radius)
+            embs_d[radius] = dict()
+            embs_d[radius]["neighs"] = find_neighbours_optimized(
+                embeddings_bincontigs,
+                contignames,
+                ccs_graph_only_binning_contigs_d,
+                radius,
+                build_graph=False,
+                binsplit_separator="C"
+            )        
+
+            print("Optimized version finished in %.2f seconds" % (time.time() - t0))
+            print("%i contigs with neighs"%(len([n for n in embs_d[radius]["neighs"][0] if len(n) > 0])))
+            if args.contignames != None:
+                
+                neighs_file = os.path.join(
+                    args.neighs_outdir,
+                    "neighs_intraonly_rm_object_r_%s.npz" % (str(radius)),
+                )
+                np.savez_compressed(
+                    neighs_file,
+                    embs_d[radius]["neighs"][0],
+                )
+                print(
+                    f"Neighs where only intra edges hoods are removed by sample saved in {neighs_file}"
+                )
+
+            ## also save cleared hoods where only intra edges hoods are removed
+            hoods_clusters_path = os.path.join(
+                args.neighs_outdir, "hoods_intraonly_rm_clusters_r_%s.tsv" % (str(radius))
+            )
+
+            with open(hoods_clusters_path, "w") as f:
+                f.write("clustername\tcontigname\n")
+                for hood_i, cs in embs_d[radius]["neighs"][1].items():
+                    for c in cs:
+                        f.write("%s\t%s\n" % (hood_i, c))
+
+            print(
+                f"Hoods where only intra edges hoods are removed by sample clusters saved in {hoods_clusters_path}"
+            )
+
+        # Save the dictionary to a Pickle file
+        # path_dict = os.path.join(embs_dir, "tmp/embs_d_%s.pkl"%(date))
+        path_dict = os.path.join("%s/embs_d.pkl" % args.neighs_outdir)
+
+        with open(path_dict, "wb") as pickle_file:
+            pickle.dump(embs_d, pickle_file)
+
+        print(f"Dictionary saved to {path_dict}")
 

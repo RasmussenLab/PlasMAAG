@@ -141,64 +141,83 @@ if __name__ == "__main__":
     c_cc_map = {c: i for i, cc in enumerate(cc_l) for c in cc}
     cc_c_map = {i: set([c for c in cc]) for i, cc in enumerate(cc_l)}
 
-    # define run_id
-    id_run_g = (args.graph_file).split("/g_")[-1].replace(".pkl", "")
+    if len(G_clean.nodes()) == 0 or len(G_clean.edges()) == 0:
+        print("The assembly_alignment_graph does not have enough information for fastn2v to be executed, thus will not be used for binning.")
+        # embs_dir_run = os.path.join(args.embs_dir, sufix + "/")
+        embs_dir_run = args.embs_dir
+        try:
+            os.makedirs(embs_dir_run)
+        except:
+            pass
 
-    sufix = "%s_nz_%s_en%i_wl%i_nw%i_Ws%i_p%.2f_q%.2f" % (
-        id_run_g,
-        args.normalization_scheme,
-        args.emb_n,
-        args.wl,
-        args.nw,
-        args.ws,
-        args.p,
-        args.q,
-    )
+        embs_path = os.path.join(embs_dir_run, "embeddings.npz")
 
-    print("fastN2V run named %s" % sufix)
+        contigsembs_path = os.path.join(embs_dir_run, "contigs_embedded.txt")
 
-    t0 = time.time()
+        np.savez(embs_path, np.array([]))
+        np.savetxt(contigsembs_path, np.array([], dtype=object), fmt="%s")
 
-    # Identify and remove isolated nodes (nodes without edges)
+        print("Output directory: %s" % embs_dir_run)
+    else:
+        # define run_id
+        id_run_g = (args.graph_file).split("/g_")[-1].replace(".pkl", "")
 
-    model = run_n2v(
-        G,
-        args.emb_n,
-        args.wl,
-        args.nw,
-        args.normalization_scheme,
-        args.ws,
-        args.p,
-        args.q,
-    )
+        sufix = "%s_nz_%s_en%i_wl%i_nw%i_Ws%i_p%.2f_q%.2f" % (
+            id_run_g,
+            args.normalization_scheme,
+            args.emb_n,
+            args.wl,
+            args.nw,
+            args.ws,
+            args.p,
+            args.q,
+        )
+        
+        print("fastN2V run named %s" % sufix)
 
-    t1 = time.time()
-    ti = (t1 - t0) / 60
+        t0 = time.time()
 
-    print("fastN2V run %s finished in %.2f minutes" % (sufix, ti))
+        # Identify and remove isolated nodes (nodes without edges)
 
-    # contignames files
-    contigs_embedded = []
-    embeddings = []
+        model = run_n2v(
+            G,
+            args.emb_n,
+            args.wl,
+            args.nw,
+            args.normalization_scheme,
+            args.ws,
+            args.p,
+            args.q,
+        )
 
-    for cc in nx.connected_components(G):
-        for c in cc:
-            embeddings.append(model.wv[c])
-            contigs_embedded.append(c)
+        t1 = time.time()
+        ti = (t1 - t0) / 60
 
-    # embs_dir_run = os.path.join(args.embs_dir, sufix + "/")
-    embs_dir_run = args.embs_dir
-    try:
-        os.makedirs(embs_dir_run)
-    except:
-        pass
+        print("fastN2V run %s finished in %.2f minutes" % (sufix, ti))
 
-    embs_path = os.path.join(embs_dir_run, "embeddings.npz")
+        # contignames files
+        contigs_embedded = []
+        embeddings = []
 
-    contigsembs_path = os.path.join(embs_dir_run, "contigs_embedded.txt")
+        for cc in nx.connected_components(G):
+            for c in cc:
+                embeddings.append(model.wv[c])
+                contigs_embedded.append(c)
 
-    np.savez(embs_path, np.array(embeddings))
-    np.savetxt(contigsembs_path, np.array(contigs_embedded, dtype=object), fmt="%s")
-    model.save(os.path.join(embs_dir_run, "word2vec.model"))
+        # embs_dir_run = os.path.join(args.embs_dir, sufix + "/")
+        embs_dir_run = args.embs_dir
+        try:
+            os.makedirs(embs_dir_run)
+        except:
+            pass
 
-    print("Output directory: %s" % embs_dir_run)
+        embs_path = os.path.join(embs_dir_run, "embeddings.npz")
+
+        contigsembs_path = os.path.join(embs_dir_run, "contigs_embedded.txt")
+
+        np.savez(embs_path, np.array(embeddings))
+        np.savetxt(contigsembs_path, np.array(contigs_embedded, dtype=object), fmt="%s")
+        model.save(os.path.join(embs_dir_run, "word2vec.model"))
+
+        print("Output directory: %s" % embs_dir_run)
+        
