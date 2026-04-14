@@ -137,7 +137,8 @@ rule all:
         candidate_plasmids = OUTDIR / "results/candidate_plasmids.tsv",
         candidate_genomes = OUTDIR / "results/candidate_genomes.tsv",
         candidate_virus = OUTDIR / "results/candidate_virus.tsv",
-        combined_scores = OUTDIR / "results/scores.tsv",
+        plasmid_scores = OUTDIR / "results/plasmid_scores.tsv",
+        nonplasmid_scores = OUTDIR / "results/virus_organism_scores.tsv",
         results_dir = directory(OUTDIR / "results/")
     params:
         path = os.path.join(SRC_DIR, 'write_candidate_bins_virus.py'),
@@ -148,7 +149,8 @@ rule all:
         cat {input.candidate_genomes} > {output.candidate_genomes}
         cat {input.candidate_virus} > {output.candidate_virus}
         # Remove header from one of the files
-        tail -n+2  {input.candidate_genomes_scores} | cat {input.candidate_plasmids_scores} - > {output.combined_scores}
+        cat {input.candidate_genomes_scores} > {output.nonplasmid_scores}
+        cat {input.candidate_plasmids_scores} > {output.plasmid_scores} 
         # Write bins from cluster candidates
         python {params.path} --cls_pl {output.candidate_plasmids} --cls_org {output.candidate_genomes} --cls_vir {output.candidate_virus} --contigs {input.contigs} --outdir {output.results_dir} --composition {input.composition}
         """
