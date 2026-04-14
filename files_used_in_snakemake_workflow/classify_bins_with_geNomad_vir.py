@@ -190,7 +190,7 @@ if __name__ == "__main__":
     # Add contigs to the set
     organism_cluster_contigs.update(organism_contigs)
     virus_cluster_contigs.update(virus_contigs)
-
+    
     # Write out clusters above the threshold to the file
     with open(args.outp, "w") as f_pla:
         f_pla.write("clustername\tcontigname\n")
@@ -201,14 +201,14 @@ if __name__ == "__main__":
 
     ## Load dflt clusters and extract plasmid contigs
     dfltclusters_arr = np.loadtxt(args.dflt_cls, skiprows=1, dtype=object)
-    organism_dfltcl_cs_d = {cl: set() for cl in set(dfltclusters_arr[:, 0])}
-    virus_dfltcl_cs_d = {cl: set() for cl in set(dfltclusters_arr[:, 0])}
+    organism_dfltcl_cs_d = {cl+"_org": set() for cl in set(dfltclusters_arr[:, 0])}
+    virus_dfltcl_cs_d = {cl+"_vir": set() for cl in set(dfltclusters_arr[:, 0])}
 
     for cl, c in dfltclusters_arr:
         if c in organism_cluster_contigs:
-            organism_dfltcl_cs_d[cl].add(c)
+            organism_dfltcl_cs_d[cl+"_org"].add(c)
         if c in virus_cluster_contigs:
-            virus_dfltcl_cs_d[cl].add(c)
+            virus_dfltcl_cs_d[cl+"_vir"].add(c)
 
     ## save new clusters: organisms
     f_nonplasmid_organism_cls = args.dflt_cls.replace(
