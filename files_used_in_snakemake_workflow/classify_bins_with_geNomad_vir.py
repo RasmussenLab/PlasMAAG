@@ -166,7 +166,7 @@ if __name__ == "__main__":
     organism_clusters = {
         cl: cs
         for cl, cs in below_threshold_clusters.items()
-        if cl_genomadscores_d[cl]["org"] >= cl_genomadscores_d[cl]["vir"]
+        if cl_genomadscores_d[cl]["org"] > cl_genomadscores_d[cl]["vir"]
     }
 
     ## Identify virus clusters
