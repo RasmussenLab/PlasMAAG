@@ -262,7 +262,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--mem_efficient",
-        action="store_false",
+        action="store_true",
         help="if set, edge attributes will be minimized to save memory, i.e. only al_len and identity will be kept",
     )
 
