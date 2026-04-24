@@ -119,7 +119,7 @@ rule Strobealign_bam_default:
         input:
             fw = read_fw,
             rv = read_rv,
-            contigs = "/home/projects/cu_10108/people/paupie/plasmaag_bangladesh_all_samples_wo_birth_1_2_2_2_based_on_louvain/results/candidate_plasmids_and_phage_and_mq_organisms_contigs.fna"
+            contigs = "/home/projects/cu_10108/people/paupie/plasmaag_bangladesh_all_samples_wo_birth_1_2_2_2_based_on_louvain/results_new/candidate_plasmids_and_phage_contigs.fna"
         output:
             OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam",
             OUTDIR / "intermidiate_files/rule_completed_checks/mapped/Strobealign_bam_default_{id}.finished"
@@ -133,7 +133,7 @@ rule Strobealign_bam_default:
         conda: THIS_FILE_DIR / "envs/strobe_env.yaml"
         shell:
             """
-            strobealign -t {threads} {input.contigs} {input.fw} {input.rv} > {output[0]} 2> {log.log}
+            strobealign -t {threads} {input.contigs} {input.fw} {input.rv} > {output[0]} 2> {log.log} ## we should include secondary alignments next time so we can have a bettter estimate of the coverage and presence
             touch {output[1]}
             """
 
