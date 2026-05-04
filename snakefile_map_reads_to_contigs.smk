@@ -133,7 +133,7 @@ rule Strobealign_bam_default:
         conda: THIS_FILE_DIR / "envs/strobe_env.yaml"
         shell:
             """
-            strobealign -t {threads} {input.contigs} {input.fw} {input.rv} > {output[0]} 2> {log.log} ## we should include secondary alignments next time so we can have a bettter estimate of the coverage and presence
+            strobealign -N 20 -t {threads} {input.contigs} {input.fw} {input.rv} > {output[0]} 2> {log.log} ## we should include secondary alignments next time so we can have a bettter estimate of the coverage and presence
             touch {output[1]}
             """
 
