@@ -108,8 +108,8 @@ extract_neighs_from_n2v_embeddings:
   mem_gb: 180
 
 run_contrastive_VAE:
-  threads: 10
-  mem_gb: 128
+  threads: 16
+  mem_gb: 256
 
 merge_circular_with_graph_clusters:
   threads: 1
