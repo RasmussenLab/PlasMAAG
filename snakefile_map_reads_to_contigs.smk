@@ -111,7 +111,9 @@ except FileExistsError:
 rulename = "all"
 rule all:
     input:
-        finished = os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/run_VAE.finished')
+        coverages_log = lambda wildcards: expand(OUTDIR / "intermidiate_files/rule_completed_checks/coverage/coverage_{id}.finished", id=sample_id["intermidiate_files"])
+        #finished = os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/run_VAE.finished')
+
 
 # Run strobealign to get the abundances
 rulename = "Strobealign_bam_default"
