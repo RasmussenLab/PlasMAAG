@@ -111,8 +111,7 @@ except FileExistsError:
 rulename = "all"
 rule all:
     input:
-        coverages_log = lambda wildcards: expand(OUTDIR / "intermidiate_files/rule_completed_checks/coverage/coverage_{id}.finished", id=sample_id["intermidiate_files"])
-        #finished = os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/run_VAE.finished')
+        finished = os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/run_VAE.finished')
 
 
 # Run strobealign to get the abundances
@@ -208,7 +207,7 @@ rule run_contrastive_VAE:
         """
         rmdir {output.directory}
         {PLAMB_PRELOAD}
-        vamb bin default --outdir {output.directory} --fasta {input.contigs} -p {threads} -e 2 -q 1 --bamfiles {input.bamfiles}\
+        vamb bin default --outdir {output.directory} --fasta {input.contigs} -p {threads} -e 2 -q 1 -z 0.95 --bamfiles {input.bamfiles}\
         -m {MIN_CONTIG_LEN} {PLAMB_PARAMS}\
          {params.cuda} &> {log.log}
         touch {output.finished}
