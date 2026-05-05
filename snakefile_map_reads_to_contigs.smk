@@ -177,7 +177,7 @@ rule coverage:
         o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
     shell:
         """
-        samtools coverage {input[0]} > {output[0]} 2> {log.log}
+        samtools coverage {input[0]} | awk '$6 > 0' >  {output[0]} 2> {log.log}
         touch {output[1]}
         """
 
