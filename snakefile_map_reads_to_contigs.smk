@@ -113,15 +113,16 @@ rule all:
     input:
         finished = os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/run_VAE.finished')
 
-
+CONTIGS_FILE="/home/projects/ku_00041/data/EMBARQ/cache/binning/plasmaag_outdir_221/results/contigs_in_MQ_genomes_plasmids_and_virus.fna"
+MIN_READ_MAP_ID=0.90
+SECONDARY_ALIGNMENTS_N=100
 # Run strobealign to get the abundances
 rulename = "Strobealign_bam_default"
 rule Strobealign_bam_default:
         input:
             fw = read_fw,
             rv = read_rv,
-            contigs = "/home/projects/cu_10108/people/paupie/plasmaag_bangladesh_all_samples_wo_birth_1_2_2_2_based_on_louvain/results_new/tmp/candidate_plasmids_contigs.fna"
-            #contigs = "/home/projects/cu_10108/people/paupie/plasmaag_bangladesh_all_samples_wo_birth_1_2_2_2_based_on_louvain/results_new/candidate_plasmids_and_phage_contigs.fna"
+            contigs = CONTIGS_FILE
         output:
             OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam",
             OUTDIR / "intermidiate_files/rule_completed_checks/mapped/Strobealign_bam_default_{id}.finished"
@@ -135,7 +136,7 @@ rule Strobealign_bam_default:
         conda: THIS_FILE_DIR / "envs/strobe_env.yaml"
         shell:
             """
-            strobealign -N 50 -t {threads} {input.contigs} {input.fw} {input.rv} > {output[0]} 2> {log.log} ## we should include secondary alignments next time so we can have a bettter estimate of the coverage and presence
+            strobealign -N {SECONDARY_ALIGNMENTS_N} -t {threads} {input.contigs} {input.fw} {input.rv} > {output[0]} 2> {log.log} ## we should include secondary alignments next time so we can have a bettter estimate of the coverage and presence
             touch {output[1]}
             """
 
@@ -187,7 +188,7 @@ rule coverage:
 rulename = "run_contrastive_VAE"
 rule run_contrastive_VAE:
     input:
-        contigs = "/home/projects/cu_10108/people/paupie/plasmaag_bangladesh_all_samples_wo_birth_1_2_2_2_based_on_louvain/results/candidate_plasmids_and_phage_and_mq_organisms_contigs.fna",
+        contigs = CONTIGS_FILE,
         bamfiles = lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort", id=sample_id["intermidiate_files"]),
         coverages_log = lambda wildcards: expand(OUTDIR / "intermidiate_files/rule_completed_checks/coverage/coverage_{id}.finished", id=sample_id["intermidiate_files"]),
         bamfiles_log = lambda wildcards: expand(OUTDIR / "intermidiate_files/rule_completed_checks/mapped_sort/sort_{id}.finished", id=sample_id["intermidiate_files"])
@@ -207,7 +208,7 @@ rule run_contrastive_VAE:
         """
         rmdir {output.directory}
         {PLAMB_PRELOAD}
-        vamb bin default --outdir {output.directory} --fasta {input.contigs} -p {threads} -e 2 -q 1 -z 0.95 --bamfiles {input.bamfiles}\
+        vamb bin default --outdir {output.directory} --fasta {input.contigs} -p {threads} -e 2 -q 1 -z {MIN_READ_MAP_ID} --bamfiles {input.bamfiles}\
         -m {MIN_CONTIG_LEN} {PLAMB_PARAMS}\
          {params.cuda} &> {log.log}
         touch {output.finished}
