@@ -111,7 +111,7 @@ except FileExistsError:
 rulename = "all"
 rule all:
     input:
-        coverages_log = lambda wildcards: expand(OUTDIR / "intermidiate_files/rule_completed_checks/coverage/coverage_{id}.finished", id=sample_id["intermidiate_files"]),
+        coverages_log = lambda wildcards: expand(OUTDIR / "intermidiate_files/rule_completed_checks/coverages_mapq/coverage_{id}.finished", id=sample_id["intermidiate_files"]),
 
 # extract coverage 
 rulename="coverage"
@@ -120,7 +120,7 @@ rule coverage:
         bamfiles = lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort", id=sample_id["intermidiate_files"])
     output:
         OUTDIR / "intermidiate_files/assembly_mapping_output/coverages_mapq/{id}_coverage.txt",
-        OUTDIR / "intermidiate_files/rule_completed_checks/coverages/coverage_{id}.finished"
+        OUTDIR / "intermidiate_files/rule_completed_checks/coverages_mapq/coverage_{id}.finished"
     threads: threads_fn("coverage")
     resources: walltime = walltime_fn("coverage"), mem_gb = mem_gb_fn("coverage")
     log:
