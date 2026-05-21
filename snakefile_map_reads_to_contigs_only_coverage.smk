@@ -113,32 +113,14 @@ rule all:
     input:
         coverages_log = lambda wildcards: expand(OUTDIR / "intermidiate_files/rule_completed_checks/coverages_mapq/coverage_{id}.finished", id=sample_id["intermidiate_files"]),
 
-rule Strobealign_bam_default:
-        input:
-            fw = read_fw,
-            rv = read_rv
-        output:
-            OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort",
-            OUTDIR / "intermidiate_files/rule_completed_checks/mapped_sort/sort_{id}.finished"
-        threads: threads_fn(rulename)
-        resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-        benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
-        log: 
-            log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename,
-            e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_err",
-            o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
-        conda: THIS_FILE_DIR / "envs/strobe_env.yaml"
-        shell:
-            """
-            true
-            """
 
 # extract coverage 
 rulename="coverage"
 rule coverage:
     input:
-        OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort",
-        OUTDIR / "intermidiate_files/rule_completed_checks/mapped_sort/sort_{id}.finished"
+        fw = read_fw,
+        rv = read_rv,
+        bam_file = OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort"
     output:
         OUTDIR / "intermidiate_files/assembly_mapping_output/coverages_mapq/{id}_coverage.txt",
         OUTDIR / "intermidiate_files/rule_completed_checks/coverages_mapq/coverage_{id}.finished"
@@ -151,7 +133,7 @@ rule coverage:
         o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
     shell:
         """
-        samtools coverage -q 20  {input[0]} | awk '$6 > 0' >  {output[0]} 2> {log.log}
+        samtools coverage -q 20  {input.bam_file} | awk '$6 > 0' >  {output[0]} 2> {log.log}
         touch {output[1]}
         """
 
