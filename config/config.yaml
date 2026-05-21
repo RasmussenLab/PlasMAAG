@@ -60,8 +60,8 @@ get_contig_names:
   mem_gb: 4
 
 Strobealign_bam_default:
-  threads: 10
-  mem_gb: 160
+  threads: 8
+  mem_gb: 35
 
 sort:
   threads: 8
