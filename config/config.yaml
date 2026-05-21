@@ -67,6 +67,10 @@ sort:
   threads: 8
   mem_gb: 16
 
+coverage:
+  threads: 2
+  mem_gb: 9
+
 circularize:
   threads: 1
   mem_gb: 16
