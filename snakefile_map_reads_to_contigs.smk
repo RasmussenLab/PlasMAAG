@@ -175,6 +175,7 @@ rule coverage:
         OUTDIR / "intermidiate_files/rule_completed_checks/coverage/coverage_{id}.finished"
     threads: threads_fn("coverage")
     resources: walltime = walltime_fn("coverage"), mem_gb = mem_gb_fn("coverage")
+    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
     log:
         log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename,
         e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_err",
