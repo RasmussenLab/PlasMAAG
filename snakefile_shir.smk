@@ -10,7 +10,7 @@ from snakemake.io import glob_wildcards
 THIS_FILE_DIR = Path(workflow.basedir)
 
 # If the configfile is not set explicit fall back to the default
-CONFIG_PATH = THIS_FILE_DIR / "config/config.yaml"
+CONFIG_PATH = THIS_FILE_DIR / "config/config_shir.yaml"
 # TODO should go to configfile
 if CONFIG_PATH.exists():
     configfile: CONFIG_PATH
