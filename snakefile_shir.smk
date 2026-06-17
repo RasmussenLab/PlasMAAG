@@ -69,7 +69,7 @@ checkpoint chunk_contigs:
     shell:
         r"""
         mkdir -p {output[0]}
-        awk -v prefix="{params}" -v chunk_size=50000 '
+        cat {input} | awk -v prefix="{params}" -v chunk_size=50000 '
         /^>/ {{
             if (count % chunk_size == 0) {{
                 if (out) close(out)
@@ -78,7 +78,7 @@ checkpoint chunk_contigs:
             count++
         }}
         {{ print | out }}
-        ' {input} 2> {log.log}
+        ' 2> {log.log}
         touch {output[1]}
         """
 
