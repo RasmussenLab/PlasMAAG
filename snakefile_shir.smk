@@ -31,7 +31,7 @@ default_mem_gb = config.get("default_mem_gb", 50)
 
 
 # Ensure consistent filename pattern for chunks
-CHUNK_DIR = os.path.join(OUTDIR, "intermidiate_files/assembly_mapping_output/contig_chunks/")
+CHUNK_DIR = os.path.join(OUTDIR, "contig_chunks/")
 CHUNK_PATTERN = os.path.join(CHUNK_DIR, "contigs_chunk_{id}.faa")
 
 
@@ -56,9 +56,9 @@ rulename="chunk_contigs"
 checkpoint chunk_contigs:
     input: "/home/projects/cu_10108/people/paupie/plasmaag_bangladesh_all_samples_wo_birth_1_2_2_2_based_on_louvain/results_new/prodigal/plasmids_filtered_proteins_renamed.faa"
     output: 
-        directory(os.path.join(OUTDIR,"intermidiate_files/assembly_mapping_output/contig_chunks")),
+        directory(os.path.join(OUTDIR,"contig_chunks")),
         os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/chunk_contigs.finished')
-    params: os.path.join(OUTDIR, "intermidiate_files/assembly_mapping_output/contig_chunks/contigs_chunk_") 
+    params: os.path.join(OUTDIR, "contig_chunks/contigs_chunk_") 
     benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files" + rulename
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
