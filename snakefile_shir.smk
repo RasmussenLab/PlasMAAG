@@ -73,7 +73,7 @@ checkpoint chunk_contigs:
         /^>/ {{
             if (count % chunk_size == 0) {{
                 if (out) close(out)
-                chunk = sprintf("%s%04d.flt.fna", prefix, ++file_id)
+                chunk = sprintf("%s%04d.faa", prefix, ++file_id)
                 out = chunk 
             }}
             count++
