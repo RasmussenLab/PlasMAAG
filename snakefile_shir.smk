@@ -69,17 +69,17 @@ checkpoint chunk_contigs:
     shell:
         r"""
         mkdir -p {output[0]}
-        # cat {input} | awk -v prefix="{params}" -v chunk_size=50000 '
-        # /^>/ {{
-        #     if (count % chunk_size == 0) {{
-        #         if (out) close(out)
-        #         chunk = sprintf("%s%04d.faa", prefix, ++file_id)
-        #         out = chunk 
-        #     }}
-        #     count++
-        # }}
-        # {{ print | out }}
-        # ' 2> {log.log}
+        cat {input} | awk -v prefix="{params}" -v chunk_size=50000 '
+        /^>/ {{
+            if (count % chunk_size == 0) {{
+                if (out) close(out)
+                chunk = sprintf("%s%04d.faa", prefix, ++file_id)
+                out = chunk 
+            }}
+            count++
+        }}
+        {{ print | out }}
+        ' 2> {log.log}
         touch {output[1]}
         """
 
