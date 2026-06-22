@@ -11,7 +11,7 @@ From FASTQ read files the tool will output:
 
 _If you don't want PlasMAAG to assemble the reads, you can also pass in the paths to the asssemblies._
 
-See the paper in Nature Biotechnolgy for more information: ["Accurate plasmid reconstruction from metagenomics data using assembly-alignment graphs and contrastive learning"](https://www.nature.com/articles/s41587-026-03005-7)
+See the paper in Nature Biotechnology for more information: ["Accurate plasmid reconstruction from metagenomics data using assembly-alignment graphs and contrastive learning"](https://www.nature.com/articles/s41587-026-03005-7)
 
 
 ## Quick Start :rocket:
