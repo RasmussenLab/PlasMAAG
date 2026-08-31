@@ -39,7 +39,7 @@ docs = [
 [metadata]
 authors = [
   {name = "Jakob Nybo Nissen", email = "jakobnybonissen@gmail.com"},
-  {name = "Pau Piera", email = "pau.piera@cpr.ku.dk"},
+  {name = "Pau Piera Líndez", email = "pau.piera@cpr.ku.dk"},
   {name = "Simon Rasmussen", email = "simon.rasmussen@cpr.ku.dk"},
   {name = "Lasse Schnell Danilesen", email = "lasse.danielsen@sund.ku.dk"},
 ]
