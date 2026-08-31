@@ -42,6 +42,7 @@ N2V_NW= config.get("n2v_nw", 50)
 N2V_WS= config.get("n2v_ws", 10)
 N2V_P= config.get("n2v_p", 0.1)
 N2V_Q= config.get("n2v_q", 2.0)
+N2V_FIXED_SEED = config.get("n2v_fixed_seed", False)
 
 # Binning parameters
 PLAMB_PARAMS = config.get("plamb_params", ' -o C ')
@@ -591,8 +592,8 @@ rule weighted_alignment_graph:
 rulename = "n2v_assembly_alignment_graph"
 rule n2v_assembly_alignment_graph:
     input:
-        os.path.join(OUTDIR,"intermidiate_files",'alignment_graph','alignment_graph.pkl'),
-        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','alignment_graph_processing','weighted_alignment_graph.finished'),
+        os.path.join(OUTDIR,"intermidiate_files",'assembly_alignment_graph.pkl'),
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','create_assembly_alignment_graph.finished'),
         contig_names_file = OUTDIR / "intermidiate_files/assembly_mapping_output/contigs.names.sorted"
     output:
         directory(os.path.join(OUTDIR,"intermidiate_files",'n2v','assembly_alignment_graph_embeddings')),
@@ -601,6 +602,7 @@ rule n2v_assembly_alignment_graph:
         os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','n2v','n2v_assembly_alignment_graph.finished')
     params:
         path = os.path.join(SRC_DIR, 'fastnode2vec_args.py'),
+        repro="--repro" if N2V_FIXED_SEED else "",
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
     benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
@@ -612,7 +614,7 @@ rule n2v_assembly_alignment_graph:
     shell:
         """
         python {params.path} -G {input[0]} --ed {N2V_ED} --nw {N2V_NW} --ws {N2V_WS} --wl {N2V_WL}\
-         -p {N2V_P} -q {N2V_Q} --outdirembs {output[0]} --normE {N2V_NZ} --contignames {input.contig_names_file} &> {log.log}
+         -p {N2V_P} -q {N2V_Q} --outdirembs {output[0]} --normE {N2V_NZ} --contignames {input.contig_names_file}  {params.repro}  &> {log.log}
         touch {output[3]}
         """
 
