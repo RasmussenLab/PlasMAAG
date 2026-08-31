@@ -56,7 +56,7 @@ def run_n2v(G, emb_n, wl, nw, normalization_scheme, ws, p, q,seed=None):
         print("Seed not fixed.")
         n2v = Node2Vec(graph, dim=emb_n, walk_length=wl, window=ws, p=p, q=q, workers=8 )
     else:
-        print("Seed fixed to %.2f, it will be slower.")
+        print("Seed fixed to %.2f, it will be slower."%seed)
         n2v = Node2Vec(graph, dim=emb_n, walk_length=wl, window=ws, p=p, q=q, workers=1, seed=seed )
 
     n2v.train(epochs=nw)
