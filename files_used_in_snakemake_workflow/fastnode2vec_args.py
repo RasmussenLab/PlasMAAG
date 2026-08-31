@@ -53,8 +53,10 @@ def run_n2v(G, emb_n, wl, nw, normalization_scheme, ws, p, q,seed=None):
     )
     # Node2Vec(graph: fastnode2vec.graph.Graph, dim: int, walk_length: int, window: int, p: float = 1.0, q: float = 1.0, workers: int = 1, batch_walks: Optional[int] = None, use_skipgram: bool = True, seed: Optional[int] = None, **kwargs)
     if seed == None:
+        print("Seed not fixed.")
         n2v = Node2Vec(graph, dim=emb_n, walk_length=wl, window=ws, p=p, q=q, workers=8 )
     else:
+        print("Seed fixed to %.2f, it will be slower.")
         n2v = Node2Vec(graph, dim=emb_n, walk_length=wl, window=ws, p=p, q=q, workers=1, seed=seed )
 
     n2v.train(epochs=nw)
