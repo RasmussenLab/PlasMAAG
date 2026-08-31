@@ -52,7 +52,7 @@ def run_n2v(G, emb_n, wl, nw, normalization_scheme, ws, p, q):
         weighted=True,
     )
     # Node2Vec(graph: fastnode2vec.graph.Graph, dim: int, walk_length: int, window: int, p: float = 1.0, q: float = 1.0, workers: int = 1, batch_walks: Optional[int] = None, use_skipgram: bool = True, seed: Optional[int] = None, **kwargs)
-    n2v = Node2Vec(graph, dim=emb_n, walk_length=wl, window=ws, p=p, q=q, workers=8)
+    n2v = Node2Vec(graph, dim=emb_n, walk_length=wl, window=ws, p=p, q=q, workers=1,seed=1)
 
     n2v.train(epochs=nw)
 
