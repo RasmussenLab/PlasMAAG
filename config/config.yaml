@@ -4,7 +4,7 @@
 # This is the minium size of the contigs used. Contigs smaller than this size are filtered away
 min_contig_len: "2000"
 # Pass in arguments here to extend the vamb call in the pipeline
-plamb_params: " -o C "
+plamb_params: ""
 # Pass in commands here to run before vamb is run in the pipeline
 plamb_preload: ""
 # These are parameters for node2vec which is used in the pipeline
