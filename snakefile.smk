@@ -42,6 +42,7 @@ N2V_NW= config.get("n2v_nw", 50)
 N2V_WS= config.get("n2v_ws", 10)
 N2V_P= config.get("n2v_p", 0.1)
 N2V_Q= config.get("n2v_q", 2.0)
+N2V_FIXED_SEED = config.get("n2v_fixed_seed", False)
 
 # Binning parameters
 PLAMB_PARAMS = config.get("plamb_params", ' -o C ')
@@ -136,11 +137,11 @@ rulename = "all"
 rule all:
     input:
         candidate_plasmids = expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids.tsv'),key=sample_id.keys()),
-        candidate_genomes = expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_organisms.tsv'),key=sample_id.keys()), #
-        candidate_virus = expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_virus.tsv'),key=sample_id.keys()), #
+        candidate_genomes = expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_split_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_organisms.tsv'),key=sample_id.keys()), #
+        candidate_virus = expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_split_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_virus.tsv'),key=sample_id.keys()), #
         assert_genomad_finished = expand(os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/run_geNomad.finished'), key=sample_id.keys()),
         assert_vamb_finished = expand(os.path.join(OUTDIR, "intermidiate_files",'rule_completed_checks/run_contrastive_VAE.finished'), key=sample_id.keys()),
-        candidate_genomes_scores =expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_gN_scores.tsv'), key=sample_id.keys()),
+        candidate_genomes_scores =expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_split_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_gN_scores.tsv'), key=sample_id.keys()),
         candidate_plasmids_scores = expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE',f'vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids_gN_scores.tsv'), key=sample_id.keys()),
         contigs = expand(os.path.join(OUTDIR,"intermidiate_files",'assembly_mapping_output','contigs.flt.fna.gz'), key=sample_id.keys()),
         composition = os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','composition.npz')
@@ -157,7 +158,7 @@ rule all:
         candidate_genomes = OUTDIR / "results/candidate_genomes.tsv",
         candidate_virus = OUTDIR / "results/candidate_virus.tsv",
         plasmid_scores = OUTDIR / "results/plasmid_scores.tsv",
-        nonplasmid_scores = OUTDIR / "results/virus_organism_scores.tsv",
+        nonplasmid_scores = OUTDIR / "results/virus_genomes_scores.tsv",
         results_dir = directory(OUTDIR / "results/")
     params:
         path = os.path.join(SRC_DIR, 'write_candidate_bins_virus.py'),
@@ -697,6 +698,7 @@ rule n2v_assembly_alignment_graph:
         os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','n2v','n2v_assembly_alignment_graph.finished')
     params:
         path = os.path.join(SRC_DIR, 'fastnode2vec_args.py'),
+        repro="--repro" if N2V_FIXED_SEED else "",
     threads: threads_fn(rulename)
     resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
     benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
@@ -708,7 +710,7 @@ rule n2v_assembly_alignment_graph:
     shell:
         """
         python {params.path} -G {input[0]} --ed {N2V_ED} --nw {N2V_NW} --ws {N2V_WS} --wl {N2V_WL}\
-         -p {N2V_P} -q {N2V_Q} --outdirembs {output[0]} --normE {N2V_NZ} --contignames {input.contig_names_file} &> {log.log}
+         -p {N2V_P} -q {N2V_Q} --outdirembs {output[0]} --normE {N2V_NZ} --contignames {input.contig_names_file}  {params.repro}  &> {log.log}
         touch {output[3]}
         """
 
@@ -838,9 +840,9 @@ rule classify_bins_with_geNomad:
     output:
         os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE',f'vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids.tsv'),
         os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','classify_bins_with_geNomad.finished'),
-        candidate_genomes =os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_organisms.tsv'),
-        candidate_virus =os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_virus.tsv'),
-        candidate_genomes_scores =os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_gN_scores.tsv'),
+        candidate_genomes =os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_split_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_organisms.tsv'),
+        candidate_virus =os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_split_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_virus.tsv'),
+        candidate_genomes_scores =os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_split_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_gN_scores.tsv'),
         candidate_plasmids_scores = os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE',f'vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids_gN_scores.tsv'),
     params:
         path = os.path.join(SRC_DIR, 'classify_bins_with_geNomad_vir.py'),

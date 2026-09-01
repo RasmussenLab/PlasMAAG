@@ -4,26 +4,18 @@ import os
 import numpy as np
 from git_commit import get_git_commit
 
-import vamb
 
 
-def split_clusters_by_sample(clusters,binsplitseparator):
-    nbhds_split = dict()
-    for i, (nbhd_id, nbhd_cs) in enumerate(clusters.items()):
-        if nbhd_id.endswith("_circ"):
-            nbhds_split[nbhd_id]=nbhd_cs
-            continue
-        samples_in_nbhd = set([c.split(binsplitseparator)[0] for c in nbhd_cs])
-
-        nbhd_S_d = {S: set() for S in samples_in_nbhd}
-
-        for c in nbhd_cs:
-            nbhd_S_d[c.split(binsplitseparator)[0]].add(c)
-
-        for S, cs in nbhd_S_d.items():
-            nbhds_split["%s_%s" % (str(nbhd_id), S)] = cs
-
-    return nbhds_split
+def split_clusters_by_sample(cl_cs_d,binsplitseparator,sufix=""):
+    split_cluster_cs_d = dict()
+    for cl_,cs in cl_cs_d.items():
+        for c in cs:
+            sample=c.split(binsplitseparator)[0]
+            cl = "%s%s%s%s"%(sample,binsplitseparator,cl_,sufix)
+            if cl not in split_cluster_cs_d.keys():
+                split_cluster_cs_d[cl]=set()
+            split_cluster_cs_d[cl].add(c)
+    return split_cluster_cs_d
 
 
 if __name__ == "__main__":
@@ -60,13 +52,9 @@ if __name__ == "__main__":
         help="clusters generated with the default clustering algorithm, where plasmid contigs will be removed",
     )
     parser.add_argument(
-        "--split",
-        action="store_true",
-        help="if set, contig score aggregation is applied per bin",
-    )
-    parser.add_argument(
         "--sep",
         type=str,
+        default="C",
         help="Binsplitseparator",
     )
 
@@ -111,11 +99,6 @@ if __name__ == "__main__":
     for cl, c in clusters_arr:
         cl_cs_d[cl].add(c)
 
-    if args.split:
-        if args.sep == None:
-            raise ValueError("Binsplit separator should be defined if --split is used")
-        print("Splitting clusters per sample")
-        cl_cs_d = split_clusters_by_sample(cl_cs_d,args.sep)
 
     cl_genomadscores_d = {}
     thr_circ = min(args.thr_circ, args.thr)
@@ -192,12 +175,13 @@ if __name__ == "__main__":
     virus_cluster_contigs.update(virus_contigs)
     
     # Write out clusters above the threshold to the file
+    # split plasmid clusters per sample
+    split_plasmid_cluster_cs_d = split_clusters_by_sample({cl:cs for cl,cs in cl_cs_d.items() if cl not in below_threshold_clusters},args.sep,"_plas")
     with open(args.outp, "w") as f_pla:
         f_pla.write("clustername\tcontigname\n")
-        for cl, cs in cl_cs_d.items():
-            if cl not in below_threshold_clusters:
-                for c in cs:
-                    f_pla.write(f"{cl}\t{c}\n")
+        for cl, cs in split_plasmid_cluster_cs_d.items():
+            for c in cs:
+                f_pla.write(f"{cl}\t{c}\n")
 
     ## Load dflt clusters and extract plasmid contigs
     dfltclusters_arr = np.loadtxt(args.dflt_cls, skiprows=1, dtype=object)
@@ -210,6 +194,9 @@ if __name__ == "__main__":
         if c in virus_cluster_contigs:
             virus_dfltcl_cs_d[cl+"_vir"].add(c)
 
+    organism_split_dfltcl_cs_d=split_clusters_by_sample(organism_dfltcl_cs_d,args.sep)
+    virus_split_dfltcl_cs_d=split_clusters_by_sample(virus_dfltcl_cs_d,args.sep)
+
     ## save new clusters: organisms
     f_nonplasmid_organism_cls = args.dflt_cls.replace(
         ".tsv",
@@ -217,11 +204,11 @@ if __name__ == "__main__":
             "_geNomadplasclustercontigs_extracted_thr_%s_thrcirc_%s_organisms.tsv"
             % (str(args.thr), str(thr_circ))
         ),
-    )
+    ).replace("unsplit","split")
 
     with open(f_nonplasmid_organism_cls, "w") as f:
         f.write("clustername\tcontigname\n")
-        for cl, cs in organism_dfltcl_cs_d.items():
+        for cl, cs in organism_split_dfltcl_cs_d.items():
             for c in cs:
                 f.write("%s\t%s\n" % (cl, c))
 
@@ -232,11 +219,11 @@ if __name__ == "__main__":
             "_geNomadplasclustercontigs_extracted_thr_%s_thrcirc_%s_virus.tsv"
             % (str(args.thr), str(thr_circ))
         ),
-    )
+    ).replace("unsplit","split")
 
     with open(f_nonplasmid_virus_cls, "w") as f:
         f.write("clustername\tcontigname\n")
-        for cl, cs in virus_dfltcl_cs_d.items():
+        for cl, cs in virus_split_dfltcl_cs_d.items():
             for c in cs:
                 f.write("%s\t%s\n" % (cl, c))
 
@@ -246,34 +233,36 @@ if __name__ == "__main__":
             "%s\t%s\t%s\t%s\n"
             % ("clustername", "chromosome_score", "plasmid_score", "virus_score")
         )
-        for cl in cl_cs_d.keys():
+        for cl,cs in cl_cs_d.items():
             if cl not in below_threshold_clusters:
-                if "circ" not in cl:
-                    f.write(
-                        "%s\t%s\t%s\t%s\n"
-                        % (
-                            cl,
-                            np.round(cl_genomadscores_d[cl]["org"], 3),
-                            np.round(cl_genomadscores_d[cl]["pla"], 3),
-                            np.round(cl_genomadscores_d[cl]["vir"], 3),
+                samples_in_cl = set([c.split("C")[0] for c in cs])
+                for sample in samples_in_cl:
+                    if "circ" not in cl:
+                        f.write(
+                            "%s\t%s\t%s\t%s\n"
+                            % (
+                                "%s%s%s%s"%(sample,args.sep,cl,"_plas"),
+                                np.round(cl_genomadscores_d[cl]["org"], 3),
+                                np.round(cl_genomadscores_d[cl]["pla"], 3),
+                                np.round(cl_genomadscores_d[cl]["vir"], 3),
+                            )
                         )
-                    )
-                else:
-                    c = cl.replace("_circ", "")
-                    f.write(
-                        "%s\t%s\t%s\t%s\n"
-                        % (
-                            cl,
-                            np.round(c_genomad_d[c]["org"], 3),
-                            np.round(c_genomad_d[c]["pla"], 3),
-                            np.round(c_genomad_d[c]["vir"], 3),
+                    else:
+                        c = cl.replace("_circ", "")
+                        f.write(
+                            "%s\t%s\t%s\t%s\n"
+                            % (
+                                "%s%s%s%s"%(sample,args.sep,cl,"_plas"),
+                                np.round(c_genomad_d[c]["org"], 3),
+                                np.round(c_genomad_d[c]["pla"], 3),
+                                np.round(c_genomad_d[c]["vir"], 3),
+                            )
                         )
-                    )
 
     ## Write geNomad scores per non-plasmid candidate cluster
     # First get the aggregated scores per cls
     dfltcl_genomadscores_d = dict()
-    for cl, cs in organism_dfltcl_cs_d.items():
+    for cl, cs in organism_dfltcl_cs_d.items():        
         if len(cs) == 0:
             continue
         denominator = np.sum([c_len_d[c] for c in cs])
@@ -281,21 +270,26 @@ if __name__ == "__main__":
         numerator_pla = np.sum([(c_genomad_d[c]["pla"]) * c_len_d[c] for c in cs])
         numerator_vir = np.sum([(c_genomad_d[c]["vir"]) * c_len_d[c] for c in cs])
 
-        dfltcl_genomadscores_d[cl] = {
-            "org": numerator_org / denominator,
-            "pla": numerator_pla / denominator,
-            "vir": numerator_vir / denominator,
-        }
+        samples_in_cl = set([c.split("C")[0] for c in cs])
+        for sample in samples_in_cl:
+            dfltcl_genomadscores_d["%s%s%s"%(sample,args.sep,cl)] = {
+                "org": numerator_org / denominator,
+                "pla": numerator_pla / denominator,
+                "vir": numerator_vir / denominator,
+            }
 
     for cl, cs in virus_dfltcl_cs_d.items():
-            if len(cs) == 0:
-                continue
-            denominator = np.sum([c_len_d[c] for c in cs])
-            numerator_org = np.sum([c_genomad_d[c]["org"] * c_len_d[c] for c in cs])
-            numerator_pla = np.sum([(c_genomad_d[c]["pla"]) * c_len_d[c] for c in cs])
-            numerator_vir = np.sum([(c_genomad_d[c]["vir"]) * c_len_d[c] for c in cs])
+        if len(cs) == 0:
+            continue
+        denominator = np.sum([c_len_d[c] for c in cs])
+        numerator_org = np.sum([c_genomad_d[c]["org"] * c_len_d[c] for c in cs])
+        numerator_pla = np.sum([(c_genomad_d[c]["pla"]) * c_len_d[c] for c in cs])
+        numerator_vir = np.sum([(c_genomad_d[c]["vir"]) * c_len_d[c] for c in cs])
 
-            dfltcl_genomadscores_d[cl] = {
+        samples_in_cl = set([c.split("C")[0] for c in cs])
+
+        for sample in samples_in_cl:
+            dfltcl_genomadscores_d["%s%s%s"%(sample,args.sep,cl)] = {
                 "org": numerator_org / denominator,
                 "pla": numerator_pla / denominator,
                 "vir": numerator_vir / denominator,
@@ -308,28 +302,14 @@ if __name__ == "__main__":
             "_geNomadplasclustercontigs_extracted_thr_%s_thrcirc_%s.tsv"
             % (str(args.thr), str(thr_circ))
         ),
-    )
+    ).replace("unsplit","split")
 
     with open(f_nonplasmid_cls.replace(".tsv", "_gN_scores.tsv"), "w") as f:
         f.write(
             "%s\t%s\t%s\t%s\n"
             % ("clustername", "chromosome_score", "plasmid_score", "virus_score")
         )
-        for cl in organism_dfltcl_cs_d.keys():
-            if len(organism_dfltcl_cs_d[cl]) == 0:
-                continue
-            f.write(
-                "%s\t%s\t%s\t%s\n"
-                % (
-                    cl,
-                    np.round(dfltcl_genomadscores_d[cl]["org"], 3),
-                    np.round(dfltcl_genomadscores_d[cl]["pla"], 3),
-                    np.round(dfltcl_genomadscores_d[cl]["vir"], 3),
-                )
-            )
-        for cl in virus_dfltcl_cs_d.keys():
-            if len(virus_dfltcl_cs_d[cl]) == 0:
-                continue
+        for cl in dfltcl_genomadscores_d.keys():
             f.write(
                 "%s\t%s\t%s\t%s\n"
                 % (

@@ -44,7 +44,7 @@ def remove_singleton_ccs(graph, binning_contigs):
     return graph
 
 
-def run_n2v(G, emb_n, wl, nw, normalization_scheme, ws, p, q):
+def run_n2v(G, emb_n, wl, nw, normalization_scheme, ws, p, q,seed=None):
     # Create a node2vec object
     graph = Graph(
         [(u, v, G[u][v][normalization_scheme]) for (u, v) in G.edges()],
@@ -52,7 +52,12 @@ def run_n2v(G, emb_n, wl, nw, normalization_scheme, ws, p, q):
         weighted=True,
     )
     # Node2Vec(graph: fastnode2vec.graph.Graph, dim: int, walk_length: int, window: int, p: float = 1.0, q: float = 1.0, workers: int = 1, batch_walks: Optional[int] = None, use_skipgram: bool = True, seed: Optional[int] = None, **kwargs)
-    n2v = Node2Vec(graph, dim=emb_n, walk_length=wl, window=ws, p=p, q=q, workers=8)
+    if seed == None:
+        print("Seed not fixed.")
+        n2v = Node2Vec(graph, dim=emb_n, walk_length=wl, window=ws, p=p, q=q, workers=8 )
+    else:
+        print("Seed fixed to %.2f, it will be slower."%seed)
+        n2v = Node2Vec(graph, dim=emb_n, walk_length=wl, window=ws, p=p, q=q, workers=1, seed=seed )
 
     n2v.train(epochs=nw)
 
@@ -118,6 +123,12 @@ if __name__ == "__main__":
         type=str,
         help="File containing the contignames.",
     )
+
+    parser.add_argument(
+        "--repro",
+        action="store_true",
+        help="Enable reproducible Node2Vec execution",
+)
 
     ## Print git commit so we can debug
     commit_hash = get_git_commit(os.path.abspath(__file__))
@@ -188,6 +199,7 @@ if __name__ == "__main__":
             args.ws,
             args.p,
             args.q,
+            seed=1 if args.repro == True else None
         )
 
         t1 = time.time()
