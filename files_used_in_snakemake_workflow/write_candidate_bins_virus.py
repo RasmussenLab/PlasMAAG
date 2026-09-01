@@ -205,7 +205,9 @@ if __name__ == "__main__":
         return fh
 
     try:
-        with gzip.open(args.contigs, "rt") as handle:
+        contigs_path = Path(args.contigs)
+        opener = gzip.open if contigs_path.suffix == ".gz" else open
+        with opener(contigs_path, "rt") as handle:
             for record in SeqIO.parse(handle, "fasta"):
                 info = contig_to_bin.get(record.id)
                 if info is None:
