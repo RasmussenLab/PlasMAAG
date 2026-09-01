@@ -309,21 +309,7 @@ if __name__ == "__main__":
             "%s\t%s\t%s\t%s\n"
             % ("clustername", "chromosome_score", "plasmid_score", "virus_score")
         )
-        for cl in organism_dfltcl_cs_d.keys():
-            if len(organism_dfltcl_cs_d[cl]) == 0:
-                continue
-            f.write(
-                "%s\t%s\t%s\t%s\n"
-                % (
-                    cl,
-                    np.round(dfltcl_genomadscores_d[cl]["org"], 3),
-                    np.round(dfltcl_genomadscores_d[cl]["pla"], 3),
-                    np.round(dfltcl_genomadscores_d[cl]["vir"], 3),
-                )
-            )
-        for cl in virus_dfltcl_cs_d.keys():
-            if len(virus_dfltcl_cs_d[cl]) == 0:
-                continue
+        for cl in dfltcl_genomadscores_d.keys():
             f.write(
                 "%s\t%s\t%s\t%s\n"
                 % (
