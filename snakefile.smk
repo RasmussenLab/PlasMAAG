@@ -137,11 +137,11 @@ rulename = "all"
 rule all:
     input:
         candidate_plasmids = expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids.tsv'),key=sample_id.keys()),
-        candidate_genomes = expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_organisms.tsv'),key=sample_id.keys()), #
-        candidate_virus = expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_virus.tsv'),key=sample_id.keys()), #
+        candidate_genomes = expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_split_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_organisms.tsv'),key=sample_id.keys()), #
+        candidate_virus = expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_split_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_virus.tsv'),key=sample_id.keys()), #
         assert_genomad_finished = expand(os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/run_geNomad.finished'), key=sample_id.keys()),
         assert_vamb_finished = expand(os.path.join(OUTDIR, "intermidiate_files",'rule_completed_checks/run_contrastive_VAE.finished'), key=sample_id.keys()),
-        candidate_genomes_scores =expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_unsplit_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_gN_scores.tsv'), key=sample_id.keys()),
+        candidate_genomes_scores =expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','vae_clusters_density_split_geNomadplasclustercontigs_extracted_thr_' + GENOMAD_THR + '_thrcirc_' + GENOMAD_THR_CIRC + '_gN_scores.tsv'), key=sample_id.keys()),
         candidate_plasmids_scores = expand(os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE',f'vae_clusters_graph_thr_' + GENOMAD_THR + '_candidate_plasmids_gN_scores.tsv'), key=sample_id.keys()),
         contigs = expand(os.path.join(OUTDIR,"intermidiate_files",'assembly_mapping_output','contigs.flt.fna.gz'), key=sample_id.keys()),
         composition = os.path.join(OUTDIR,"intermidiate_files",'contrastive_VAE','composition.npz')
