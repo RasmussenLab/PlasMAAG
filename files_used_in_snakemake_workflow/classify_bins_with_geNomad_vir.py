@@ -272,7 +272,7 @@ if __name__ == "__main__":
 
         samples_in_cl = set([c.split("C")[0] for c in cs])
         for sample in samples_in_cl:
-            dfltcl_genomadscores_d["%s%s%s%s"%(sample,args.sep,cl,"_org")] = {
+            dfltcl_genomadscores_d["%s%s%s"%(sample,args.sep,cl)] = {
                 "org": numerator_org / denominator,
                 "pla": numerator_pla / denominator,
                 "vir": numerator_vir / denominator,
@@ -289,7 +289,7 @@ if __name__ == "__main__":
         samples_in_cl = set([c.split("C")[0] for c in cs])
 
         for sample in samples_in_cl:
-            dfltcl_genomadscores_d["%s%s%s%s"%(sample,args.sep,cl,"_vir")] = {
+            dfltcl_genomadscores_d["%s%s%s"%(sample,args.sep,cl)] = {
                 "org": numerator_org / denominator,
                 "pla": numerator_pla / denominator,
                 "vir": numerator_vir / denominator,
