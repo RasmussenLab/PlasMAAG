@@ -116,6 +116,7 @@ if __name__ == "__main__":
     for cl,cs in plcl_cs_d.items():
         samples_in_cl = set([c.split("C")[0] for c in cs])
         if len(samples_in_cl) > 1:
+            print("Splitting plasmid clusters by sample")
             plcl_cs_d = split_clusters_by_sample(plcl_cs_d)
             break
     if args.composition is not None:
@@ -135,6 +136,7 @@ if __name__ == "__main__":
     for cl,cs in orgcl_cs_d.items():
         samples_in_cl = set([c.split("C")[0] for c in cs])
         if len(samples_in_cl) > 1:
+            print("Splitting organism clusters by sample")
             orgcl_cs_d = split_clusters_by_sample(orgcl_cs_d)
             break
 
@@ -154,6 +156,7 @@ if __name__ == "__main__":
     for cl,cs in vircl_cs_d.items():
         samples_in_cl = set([c.split("C")[0] for c in cs])
         if len(samples_in_cl) > 1:
+            print("Splitting virus clusters by sample")
             vircl_cs_d = split_clusters_by_sample(vircl_cs_d)
             break
 
