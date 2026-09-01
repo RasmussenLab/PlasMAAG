@@ -4,15 +4,14 @@ import os
 import numpy as np
 from git_commit import get_git_commit
 
-import vamb
 
 
 def split_clusters_by_sample(cl_cs_d,binsplitseparator,sufix=""):
     split_cluster_cs_d = dict()
-    for cl,cs in cl_cs_d.items():
+    for cl_,cs in cl_cs_d.items():
         for c in cs:
             sample=c.split(binsplitseparator)[0]
-            cl = "%s%s%s%s"%(sample,binsplitseparator,cl,sufix)
+            cl = "%s%s%s%s"%(sample,binsplitseparator,cl_,sufix)
             if cl not in split_cluster_cs_d.keys():
                 split_cluster_cs_d[cl]=set()
             split_cluster_cs_d[cl].add(c)
