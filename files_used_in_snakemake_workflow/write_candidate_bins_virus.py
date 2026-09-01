@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--composition",
-        required=True,
+        required=False,
         help="Composition object containing contignames and contig lengths",
     )
 
@@ -102,10 +102,11 @@ if __name__ == "__main__":
     # Parse the arguments
     args = parser.parse_args()
     print(args)
-    composition = np.load(args.composition, allow_pickle=True)
-    contignames = composition["identifiers"]
-    contiglengths = composition["lengths"]
-    c_len_d = {c: l for c, l in zip(contignames, contiglengths)}
+    if args.composition is not None:
+        composition = np.load(args.composition, allow_pickle=True)
+        contignames = composition["identifiers"]
+        contiglengths = composition["lengths"]
+        c_len_d = {c: l for c, l in zip(contignames, contiglengths)}
 
     # 
     plcl_cs_d = { cl:set() for cl,c in np.loadtxt(args.cls_pl,dtype=object,skiprows=1)}
@@ -117,8 +118,11 @@ if __name__ == "__main__":
         if len(samples_in_cl) > 1:
             plcl_cs_d = split_clusters_by_sample(plcl_cs_d)
             break
+    if args.composition is not None:
+        plcl_len_d = { cl:np.sum([ c_len_d[c] for c in cs]) for cl,cs in plcl_cs_d.items() }    
+    else:
+        plcl_len_d = { cl:np.sum([ int(c.split("length_")[1].split("_")[0]) for c in cs]) for cl,cs in plcl_cs_d.items() }
     
-    plcl_len_d = { cl:np.sum([ c_len_d[c] for c in cs]) for cl,cs in plcl_cs_d.items() }
     c2plcl={ c:cl for cl,cs in plcl_cs_d.items() if plcl_len_d[cl] >= args.min_plas_len for c in cs}
     pl_cs = set(c2plcl.keys())
     
@@ -134,7 +138,10 @@ if __name__ == "__main__":
             orgcl_cs_d = split_clusters_by_sample(orgcl_cs_d)
             break
 
-    orgcl_len_d = { cl:np.sum([ c_len_d[c] for c in cs]) for cl,cs in orgcl_cs_d.items() }
+    if args.composition is not None:
+        orgcl_len_d = { cl:np.sum([ c_len_d[c] for c in cs]) for cl,cs in orgcl_cs_d.items() }
+    else:
+        orgcl_len_d = { cl:np.sum([ int(c.split("length_")[1].split("_")[0]) for c in cs]) for cl,cs in orgcl_cs_d.items() }
     c2orgcl={ c:cl for cl,cs in orgcl_cs_d.items() if orgcl_len_d[cl] >= args.min_org_len for c in cs}
     org_cs = set(c2orgcl.keys())
 
@@ -149,7 +156,13 @@ if __name__ == "__main__":
         if len(samples_in_cl) > 1:
             vircl_cs_d = split_clusters_by_sample(vircl_cs_d)
             break
-    vircl_len_d = { cl:np.sum([ c_len_d[c] for c in cs]) for cl,cs in vircl_cs_d.items() }
+
+
+    if args.composition is not None:
+        vircl_len_d = { cl:np.sum([ c_len_d[c] for c in cs]) for cl,cs in vircl_cs_d.items() }
+    else:
+        vircl_len_d = { cl:np.sum([ int(c.split("length_")[1].split("_")[0]) for c in cs]) for cl,cs in vircl_cs_d.items() }
+
     c2vircl={ c:cl for cl,cs in vircl_cs_d.items() if vircl_len_d[cl] >= args.min_vir_len for c in cs}
     vir_cs = set(c2vircl.keys())
 
