@@ -592,8 +592,8 @@ rule weighted_alignment_graph:
 rulename = "n2v_assembly_alignment_graph"
 rule n2v_assembly_alignment_graph:
     input:
-        os.path.join(OUTDIR,"intermidiate_files",'assembly_alignment_graph.pkl'),
-        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','create_assembly_alignment_graph.finished'),
+        os.path.join(OUTDIR,"intermidiate_files",'alignment_graph','alignment_graph.pkl'),
+        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','alignment_graph_processing','weighted_alignment_graph.finished')
         contig_names_file = OUTDIR / "intermidiate_files/assembly_mapping_output/contigs.names.sorted"
     output:
         directory(os.path.join(OUTDIR,"intermidiate_files",'n2v','assembly_alignment_graph_embeddings')),
