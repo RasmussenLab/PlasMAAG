@@ -191,9 +191,9 @@ if __name__ == "__main__":
 
     for cl, c in dfltclusters_arr:
         if c in organism_cluster_contigs:
-            organism_dfltcl_cs_d[cl].add(c)
+            organism_dfltcl_cs_d[cl+"_org"].add(c)
         if c in virus_cluster_contigs:
-            virus_dfltcl_cs_d[cl].add(c)
+            virus_dfltcl_cs_d[cl+"_vir"].add(c)
 
     organism_split_dfltcl_cs_d=split_clusters_by_sample(organism_dfltcl_cs_d,args.sep)
     virus_split_dfltcl_cs_d=split_clusters_by_sample(virus_dfltcl_cs_d,args.sep)
