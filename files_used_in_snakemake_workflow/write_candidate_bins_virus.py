@@ -167,12 +167,12 @@ if __name__ == "__main__":
 
     # Fill in viruses
     for contig_name, bin_name in c2vircl.items():
-        contig_to_bin[contig_name] = ("candidate_viruses", bin_name)
+        contig_to_bin[contig_name] = ("candidate_virus", bin_name)
 
     outdir = Path(args.outdir)
 
     # Ensure directories exist (no error if already present)
-    for d in ("candidate_plasmids", "candidate_genomes", "candidate_viruses"):
+    for d in ("candidate_plasmids", "candidate_genomes", "candidate_virus"):
         (outdir / d).mkdir(parents=True, exist_ok=True)
 
 
