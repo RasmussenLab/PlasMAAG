@@ -139,7 +139,7 @@ rule all:
         candidate_genomes = OUTDIR / "results/candidate_genomes.tsv",
         candidate_virus = OUTDIR / "results/candidate_virus.tsv",
         plasmid_scores = OUTDIR / "results/plasmid_scores.tsv",
-        nonplasmid_scores = OUTDIR / "results/virus_organism_scores.tsv",
+        nonplasmid_scores = OUTDIR / "results/virus_genomes_scores.tsv",
         results_dir = directory(OUTDIR / "results/")
     params:
         path = os.path.join(SRC_DIR, 'write_candidate_bins_virus.py'),
