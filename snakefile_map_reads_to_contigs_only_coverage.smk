@@ -120,7 +120,7 @@ rule coverage:
     input:
         fw = read_fw,
         rv = read_rv,
-        bam_file = OUTDIR / "intermidiate_files/assembly_mapping_output/.snapshots/@GMT-2026.05.21-14.22.00/mapped_sorted/{id}.bam.sort"
+        bam_file = OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort"
     output:
         OUTDIR / "intermidiate_files/assembly_mapping_output/coverages_mapq/{id}_coverage.txt",
         OUTDIR / "intermidiate_files/rule_completed_checks/coverages_mapq/coverage_{id}.finished"
