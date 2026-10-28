@@ -24,4 +24,4 @@ align_all_chunks:
 
 rule all:
   threads: 1
-  default_mem_gb: 16
+  default_mem_gb: 8
