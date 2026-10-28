@@ -56,24 +56,20 @@ Passing in this file means that the pipeline will not assemble the reads but run
 @click.option(
     "-c",
     "--reads_and_contigs",
-    help=f"""\bWhite space separated file containing read pairs and paths to megahit assembled contigs.
-<Notice the header names are required to be: read1, read2 and contigs>
-This file could look like:  
-```
-read1                  read2                  contigs
-path/sample_1/read1    path/sample_1/read2    path/sample_1/final.contigs.fa
-path/sample_2/read1    path/sample_2/read2    path/sample_2/final.contigs.fa
-```
-Passing in this file means that the pipeline will not assemble the reads but run everything after the assembly step. 
-        """,
+    help="""\bTab-separated file containing PacBio HiFi read paths and assembled contig paths.
+
+Example:
+
+reads                         contigs
+/path/sample_1/hifi.fastq.gz   /path/sample_1/contigs.fasta
+/path/sample_2/hifi.fastq.gz   /path/sample_2/contigs.fasta
+
+Provide one sample per row, with columns separated by tabs.
+The pipeline uses the supplied assemblies without assembling the reads.
+""",
     type=WssFile(
-        expected_headers=[
-            "read1",
-            "read2",
-            "contigs",
-        ],
+        expected_headers=["reads", "contigs"],
         none_file_columns=[],
-        
     ),
 )
 @click.option(
