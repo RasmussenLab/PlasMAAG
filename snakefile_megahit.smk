@@ -70,33 +70,55 @@ if config.get("read_contig") == None and config.get("should_install_genomad") ==
 # Set default paths for the SPades outputfiles - running the pipeline from allready assembled reads overwrite these values
 #contigs =  OUTDIR / "intermidiate_files/assembly_mapping_output/assembly_{id}/final.contigs.fa"
 
-# Set default values for dictonaries containg information about the input information
-# The way snakemake parses snakefiles means we have to define them even though they will always be present
-sample_id = dict()
-sample_id_path= dict()
-sample_id_path_contigs = dict()
+# Read the TSV containing one HiFi read file and assembly per sample
+df = pd.read_csv(
+    config["read_contig"],
+    sep="\t",
+    comment="#",
+    dtype=str,
+)
 
-# If read_contig is defined the pipeline will take teh defined assembly ouptut files
-df = pd.read_csv(config["read_contig"], sep=r"\s+", comment="#")
+required_columns = ["reads", "contigs"]
+missing_columns = set(required_columns) - set(df.columns)
+
+if missing_columns:
+    raise ValueError(
+        "Input TSV is missing required columns: "
+        + ", ".join(sorted(missing_columns))
+    )
+
+if df.empty:
+    raise ValueError("Input TSV contains no samples.")
+
+for column in required_columns:
+    if df[column].fillna("").str.strip().eq("").any():
+        raise ValueError(f"Input TSV contains empty values in '{column}'.")
+
 sample_id = collections.defaultdict(list)
 sample_id_path = collections.defaultdict(dict)
 sample_id_path_contigs = collections.defaultdict(dict)
-for id, (read1, read2, contigs) in enumerate(zip( df.read1, df.read2, df.contigs)):
-    #id = f"sample{str(id)}"
-    id = f"{str(id)}"
-    sample = "intermidiate_files"
-    sample_id[sample].append(id)
-    sample_id_path[sample][id] = [read1, read2]
-    sample_id_path_contigs[sample][id] = [contigs]
 
-# Setting the output paths for the user defined SPades files
-contigs =  lambda wildcards: Path(sample_id_path_contigs["intermidiate_files"][wildcards.id][0]) #/ "final.contigs.fa"
+sample = "intermidiate_files"
 
-read_fw = lambda wildcards: sample_id_path["intermidiate_files"][wildcards.id][0]
-read_rv =  lambda wildcards: sample_id_path["intermidiate_files"][wildcards.id][1]
+for index, (reads_path, contigs_path) in enumerate(
+    df[required_columns].itertuples(index=False, name=None)
+):
+    sample_index = str(index)
 
-# ## Deinfe pairs for paralel alignment 
-# SAMPLE_PAIRS = [(a, b) for a, b in itertools.combinations(sample_id["intermidiate_files"], 2)]
+    sample_id[sample].append(sample_index)
+    sample_id_path[sample][sample_index] = reads_path
+    sample_id_path_contigs[sample][sample_index] = contigs_path
+
+
+# Input functions used by downstream rules
+def contigs(wildcards):
+    return Path(
+        sample_id_path_contigs["intermidiate_files"][wildcards.id]
+    )
+
+
+def read_hifi(wildcards):
+    return sample_id_path["intermidiate_files"][wildcards.id]
 
 
 # Ensure consistent filename pattern for chunks
@@ -212,7 +234,7 @@ rule filter_sample_contigs:
         "python {params.script} {output} {input} --keepnames -m {MIN_CONTIG_LEN} &> {log.log} "
 
 
-# Cat the contigs together in one file to later map each pair of reads against all the contigs together
+# Combine contigs into one catalogue for mapping each sample's HiFi reads
 rulename="cat_contigs"
 rule cat_contigs:
     input: lambda wildcards: expand(OUTDIR / "intermidiate_files/assembly_mapping_output/assembly_{id}/contigs.renamed.fasta", id=sample_id["intermidiate_files"]),
@@ -301,7 +323,7 @@ rule get_contig_names:
 rulename = "Minimap2_bam_hifi"
 rule Minimap2_bam_hifi:
     input:
-        reads = read_fw,
+        reads = read_hifi,
         contig = OUTDIR / "intermidiate_files/assembly_mapping_output/contigs.flt.fna.gz",
     output:
         bam = OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam",
