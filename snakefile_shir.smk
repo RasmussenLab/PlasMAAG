@@ -26,8 +26,8 @@ if not OUTDIR.exists():
 
 # Default resources used
 default_walltime = config.get("default_walltime", "48:00:00")
-default_threads = config.get("default_threads", 16)
-default_mem_gb = config.get("default_mem_gb", 50)
+default_threads = config.get("default_threads", 1)
+default_mem_gb = config.get("default_mem_gb", 35)
 
 
 # Ensure consistent filename pattern for chunks
@@ -51,10 +51,10 @@ rule all:
         os.path.join(OUTDIR, "intermidiate_files", "rule_completed_checks/fasta36/align_contigs.finished")
 
 
-# chunk contigs.flt.fna.gz into chunks of size 100_000
+# chunk contigs.flt.fna.gz into chunks of size N
 rulename="chunk_contigs"
 checkpoint chunk_contigs:
-    input: "/home/projects/cu_10108/people/paupie/plasmaag_bangladesh_all_samples_wo_birth_1_2_2_2_based_on_louvain/results_new/prodigal/plasmids_filtered_proteins_renamed.faa"
+    input: "/home/projects/cu_10108/people/paupie/plasmaag_bangladesh_all_samples_wo_birth_1_2_2_2_based_on_louvain/results_new/prodigal/plasmid_contigs_filtered_proteins_filtered_renamed__newnames_shrink.faa"
     output: 
         directory(os.path.join(OUTDIR,"contig_chunks")),
         os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/chunk_contigs.finished')
@@ -69,7 +69,7 @@ checkpoint chunk_contigs:
     shell:
         r"""
         mkdir -p {output[0]}
-        cat {input} | awk -v prefix="{params}" -v chunk_size=50000 '
+        cat {input} | awk -v prefix="{params}" -v chunk_size=5000 '
         /^>/ {{
             if (count % chunk_size == 0) {{
                 if (out) close(out)
@@ -148,7 +148,7 @@ rule align_contigs_per_chunk:
     shell:
         """
         module load tools 
-        /home/projects/ku_00041/people/paupie/src/fasta36/bin/fasta36 -C 200  -m 8 {input[0]} {input[1]} | awk '$1 != $2' > {output[0]}  2>> {log.log}           
+        /home/projects/ku_00041/people/paupie/src/fasta36/bin/fasta36 -T 1 -C 200  -m 8 {input[0]} {input[1]}  > {output[0]}  2>> {log.log}           
         touch {output[1]}
         """
 rulename = "align_all_chunks"
