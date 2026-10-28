@@ -296,35 +296,48 @@ rule get_contig_names:
     shell:
         "gunzip -dc {input} | grep '>' | sed 's/>//' > {output} 2> {log.log} "
 
-# Run strobealign to get the abundances
-rulename = "Strobealign_bam_default"
-rule Strobealign_bam_default:
-        input:
-            fw = read_fw,
-            rv = read_rv,
-            contig = OUTDIR /"intermidiate_files/assembly_mapping_output/contigs.flt.fna.gz",
-        output:
-            OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam",
-            OUTDIR / "intermidiate_files/rule_completed_checks/mapped/Strobealign_bam_default_{id}.finished"
-        threads: threads_fn(rulename)
-        resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-        benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
-        log: 
-            log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename,
-            e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_err",
-            o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
-        conda: THIS_FILE_DIR / "envs/strobe_env.yaml"
-        shell:
-            """
-            strobealign -t {threads} {input.contig} {input.fw} {input.rv} > {output[0]} 2> {log.log}
-            touch {output[1]}
-            """
+
+# Map PacBio HiFi reads to assembled contigs
+rulename = "Minimap2_bam_hifi"
+rule Minimap2_bam_hifi:
+    input:
+        reads = read_fw,
+        contig = OUTDIR / "intermidiate_files/assembly_mapping_output/contigs.flt.fna.gz",
+    output:
+        bam = OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam",
+        finished = OUTDIR / "intermidiate_files/rule_completed_checks/mapped/Minimap2_bam_hifi_{id}.finished"
+    threads: threads_fn(rulename)
+    resources:
+        walltime = walltime_fn(rulename),
+        mem_gb = mem_gb_fn(rulename)
+    benchmark:
+        config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_{id}_" + rulename
+    log:
+        log = config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename,
+        e = config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename + "_err",
+        o = config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename + "_out"
+    conda:
+        THIS_FILE_DIR / "envs/minimap2_env.yaml"
+    shell:
+        """
+        set -euo pipefail
+
+        (
+            minimap2 -t {threads} -ax map-hifi \
+                {input.contig:q} {input.reads:q} |
+            samstrip |
+            samtools view -b -F 2308 -o {output.bam:q} -
+        ) 2> {log.log:q}
+
+        touch {output.finished:q}
+        """
 
 # Sort the bam files and index them
 rulename="sort"
 rule sort:
     input:
         OUTDIR / "intermidiate_files/assembly_mapping_output/mapped/{id}.bam",
+        OUTDIR / "intermidiate_files/rule_completed_checks/mapped/Minimap2_bam_hifi_{id}.finished"
     output:
         OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort",
         OUTDIR /"intermidiate_files/rule_completed_checks/mapped_sort/sort_{id}.finished"
@@ -337,7 +350,7 @@ rule sort:
         o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_{id}_" + rulename+"_out"
     shell:
         """
-    samtools sort --threads {threads} {input} -o {output[0]} 2> {log.log}
+    samtools sort --threads {threads} {input[0]} -o {output[0]} 2> {log.log}
     samtools index {output[0]} 2>> {log.log}
     touch {output[1]}
     """
@@ -355,29 +368,67 @@ rule sort:
 # 9. Run geNomad to get contig plasmid, chromosome, and virus classificaiton scores
 # 10. Classify bins/clusters into plasmid/organism/virus bins/clusters
 
-# 0. Look for contigs circularizable
+# 0. Extract assembler-reported circular contigs from hifiasm identifiers
 rulename = "circularize"
 rule circularize:
     input:
-        bamfiles = lambda wildcards: expand(OUTDIR /  "intermidiate_files/assembly_mapping_output/mapped_sorted/{id}.bam.sort", id=sample_id["intermidiate_files"]),
+        contigs = OUTDIR / "intermidiate_files/assembly_mapping_output/contigs.flt.fna.gz",
     output:
-        os.path.join(OUTDIR,"intermidiate_files",'circularisation','max_insert_len_%i_circular_clusters.tsv.txt'%MAX_INSERT_SIZE_CIRC),
-        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/circularisation/circularisation.finished')
-    params:
-        path = os.path.join(SRC_DIR, 'circularisation.py'),
-        dir_bams = OUTDIR / "intermidiate_files/assembly_mapping_output/mapped_sorted"
-    threads: threads_fn(rulename),
-    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
-    log: 
-        log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
-        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
-        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
-    shell:
-        """
-        python {params.path} --dir_bams {params.dir_bams} --outcls {output[0]} --max_insert {MAX_INSERT_SIZE_CIRC} &> {log.log}
-        touch {output[1]}
-        """
+        clusters = os.path.join(
+            OUTDIR,
+            "intermidiate_files",
+            "circularisation",
+            "circular_clusters.tsv.txt",
+        ),
+        finished = os.path.join(
+            OUTDIR,
+            "intermidiate_files",
+            "rule_completed_checks/circularisation/circularisation.finished",
+        ),
+    threads: 1
+    resources:
+        walltime = walltime_fn(rulename),
+        mem_gb = mem_gb_fn(rulename)
+    benchmark:
+        config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
+    log:
+        log = config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
+        e = config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename + "_err",
+        o = config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename + "_out"
+    run:
+        import gzip
+        from pathlib import Path
+
+        for path in (output.clusters, output.finished, log.log):
+            Path(str(path)).parent.mkdir(parents=True, exist_ok=True)
+
+        opener = gzip.open if str(input.contigs).endswith(".gz") else open
+        circular_contigs = set()
+        total_contigs = 0
+
+        with opener(str(input.contigs), "rt") as fasta:
+            for line in fasta:
+                if not line.startswith(">"):
+                    continue
+
+                contig_id = line[1:].split()[0]
+                total_contigs += 1
+
+                if contig_id.endswith("c"):
+                    circular_contigs.add(contig_id)
+
+        with open(output.clusters, "w") as handle:
+            handle.write("clustername\tcontigname\n")
+            for contig_id in sorted(circular_contigs):
+                handle.write(f"{contig_id}_circ\t{contig_id}\n")
+
+        with open(log.log, "w") as handle:
+            handle.write(f"Input contigs: {total_contigs}\n")
+            handle.write(
+                f"Assembler-reported circular contigs: {len(circular_contigs)}\n"
+            )
+
+        Path(str(output.finished)).touch()
 
 
 # 1. Align contigs pairwise
@@ -687,7 +738,7 @@ rule merge_circular_with_graph_clusters:
     input:
         os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/run_contrastive_VAE.finished'),
         os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/circularisation/circularisation.finished'),
-        os.path.join(OUTDIR,"intermidiate_files",'circularisation','max_insert_len_%i_circular_clusters.tsv.txt'%MAX_INSERT_SIZE_CIRC),
+        os.path.join(OUTDIR,"intermidiate_files",'circularisation','circular_clusters.tsv.txt'),
         vae_clusters = os.path.join(OUTDIR, 'intermidiate_files','contrastive_VAE/vae_clusters_community_based_complete_unsplit.tsv')
     output:
         os.path.join(OUTDIR,'intermidiate_files','contrastive_VAE','vae_clusters_community_based_complete_and_circular_unsplit.tsv'),
