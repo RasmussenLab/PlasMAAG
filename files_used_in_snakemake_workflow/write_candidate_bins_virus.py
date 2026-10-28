@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--composition",
-        required=True,
+        required=False,
         help="Composition object containing contignames and contig lengths",
     )
 
@@ -102,36 +102,70 @@ if __name__ == "__main__":
     # Parse the arguments
     args = parser.parse_args()
     print(args)
-    composition = np.load(args.composition, allow_pickle=True)
-    contignames = composition["identifiers"]
-    contiglengths = composition["lengths"]
-    c_len_d = {c: l for c, l in zip(contignames, contiglengths)}
+    if args.composition is not None:
+        composition = np.load(args.composition, allow_pickle=True)
+        contignames = composition["identifiers"]
+        contiglengths = composition["lengths"]
+        c_len_d = {c: l for c, l in zip(contignames, contiglengths)}
 
     # 
-    plcl_cs_d_ = { cl:set() for cl,c in np.loadtxt(args.cls_pl,dtype=object,skiprows=1)}
+    plcl_cs_d = { cl:set() for cl,c in np.loadtxt(args.cls_pl,dtype=object,skiprows=1)}
     for cl,c in np.loadtxt(args.cls_pl,dtype=object,skiprows=1):
-        plcl_cs_d_[cl].add(c)
-    plcl_cs_d = split_clusters_by_sample(plcl_cs_d_)
-    plcl_len_d = { cl:np.sum([ c_len_d[c] for c in cs]) for cl,cs in plcl_cs_d.items() }
+        plcl_cs_d[cl].add(c)
+    # if plasmid are not split by sample, split them
+    for cl,cs in plcl_cs_d.items():
+        samples_in_cl = set([c.split("C")[0] for c in cs])
+        if len(samples_in_cl) > 1:
+            print("Splitting plasmid clusters by sample")
+            plcl_cs_d = split_clusters_by_sample(plcl_cs_d)
+            break
+    if args.composition is not None:
+        plcl_len_d = { cl:np.sum([ c_len_d[c] for c in cs]) for cl,cs in plcl_cs_d.items() }    
+    else:
+        plcl_len_d = { cl:np.sum([ int(c.split("length_")[1].split("_")[0]) for c in cs]) for cl,cs in plcl_cs_d.items() }
+    
     c2plcl={ c:cl for cl,cs in plcl_cs_d.items() if plcl_len_d[cl] >= args.min_plas_len for c in cs}
     pl_cs = set(c2plcl.keys())
     
     
-    orgcl_cs_d_ = { cl:set() for cl,c in np.loadtxt(args.cls_org,dtype=object,skiprows=1)}
+    orgcl_cs_d = { cl:set() for cl,c in np.loadtxt(args.cls_org,dtype=object,skiprows=1)}
     for cl,c in np.loadtxt(
         args.cls_org,dtype=object,skiprows=1):
-        orgcl_cs_d_[cl].add(c)
-    orgcl_cs_d = split_clusters_by_sample(orgcl_cs_d_)
-    orgcl_len_d = { cl:np.sum([ c_len_d[c] for c in cs]) for cl,cs in orgcl_cs_d.items() }
+        orgcl_cs_d[cl].add(c)
+    # if organisms are not split by sample, split them
+    for cl,cs in orgcl_cs_d.items():
+        samples_in_cl = set([c.split("C")[0] for c in cs])
+        if len(samples_in_cl) > 1:
+            print("Splitting organism clusters by sample")
+            orgcl_cs_d = split_clusters_by_sample(orgcl_cs_d)
+            break
+
+    if args.composition is not None:
+        orgcl_len_d = { cl:np.sum([ c_len_d[c] for c in cs]) for cl,cs in orgcl_cs_d.items() }
+    else:
+        orgcl_len_d = { cl:np.sum([ int(c.split("length_")[1].split("_")[0]) for c in cs]) for cl,cs in orgcl_cs_d.items() }
     c2orgcl={ c:cl for cl,cs in orgcl_cs_d.items() if orgcl_len_d[cl] >= args.min_org_len for c in cs}
     org_cs = set(c2orgcl.keys())
 
-    vircl_cs_d_ = { cl:set() for cl,c in np.loadtxt(args.cls_vir,dtype=object,skiprows=1)}
+    vircl_cs_d = { cl:set() for cl,c in np.loadtxt(args.cls_vir,dtype=object,skiprows=1)}
     for cl,c in np.loadtxt(
         args.cls_vir,dtype=object,skiprows=1):
-        vircl_cs_d_[cl].add(c)
-    vircl_cs_d = split_clusters_by_sample(vircl_cs_d_)
-    vircl_len_d = { cl:np.sum([ c_len_d[c] for c in cs]) for cl,cs in vircl_cs_d.items() }
+        vircl_cs_d[cl].add(c)
+
+    # if phages are not split by sample, split them
+    for cl,cs in vircl_cs_d.items():
+        samples_in_cl = set([c.split("C")[0] for c in cs])
+        if len(samples_in_cl) > 1:
+            print("Splitting virus clusters by sample")
+            vircl_cs_d = split_clusters_by_sample(vircl_cs_d)
+            break
+
+
+    if args.composition is not None:
+        vircl_len_d = { cl:np.sum([ c_len_d[c] for c in cs]) for cl,cs in vircl_cs_d.items() }
+    else:
+        vircl_len_d = { cl:np.sum([ int(c.split("length_")[1].split("_")[0]) for c in cs]) for cl,cs in vircl_cs_d.items() }
+
     c2vircl={ c:cl for cl,cs in vircl_cs_d.items() if vircl_len_d[cl] >= args.min_vir_len for c in cs}
     vir_cs = set(c2vircl.keys())
 
@@ -149,12 +183,12 @@ if __name__ == "__main__":
 
     # Fill in viruses
     for contig_name, bin_name in c2vircl.items():
-        contig_to_bin[contig_name] = ("candidate_viruses", bin_name)
+        contig_to_bin[contig_name] = ("candidate_virus", bin_name)
 
     outdir = Path(args.outdir)
 
     # Ensure directories exist (no error if already present)
-    for d in ("candidate_plasmids", "candidate_genomes", "candidate_viruses"):
+    for d in ("candidate_plasmids", "candidate_genomes", "candidate_virus"):
         (outdir / d).mkdir(parents=True, exist_ok=True)
 
 
@@ -187,7 +221,9 @@ if __name__ == "__main__":
         return fh
 
     try:
-        with gzip.open(args.contigs, "rt") as handle:
+        contigs_path = Path(args.contigs)
+        opener = gzip.open if contigs_path.suffix == ".gz" else open
+        with opener(contigs_path, "rt") as handle:
             for record in SeqIO.parse(handle, "fasta"):
                 info = contig_to_bin.get(record.id)
                 if info is None:
@@ -203,27 +239,3 @@ if __name__ == "__main__":
                 fh.flush()
             finally:
                 fh.close()
-
-
-    # os.makedirs(os.path.join(args.outdir,"candidate_plasmids"))
-    # os.makedirs(os.path.join(args.outdir,"candidate_genomes"))
-    # os.makedirs(os.path.join(args.outdir,"candidate_viruses"))
-
-    # with gzip.open(args.contigs, "rt") as handle:
-    #     for record in SeqIO.parse(handle, "fasta"):
-    #         contig_name= record.id
-    #         if contig_name not in org_cs.union(pl_cs).union(vir_cs):
-    #             continue
-    #         bin_dir =  "candidate_plasmids" if contig_name in pl_cs else "candidate_genomes" if contig_name in org_cs else "candidate_viruses"
-    #         if bin_dir == "candidate_plasmids":
-    #             bin_name= c2plcl[contig_name]
-    #         elif bin_dir == "candidate_genomes":
-    #             bin_name= c2orgcl[contig_name]
-    #         else:
-    #             bin_name= c2vircl[contig_name]
-    #         bin_file = bin_name+".fna"
-    #         bin_path = os.path.join(args.outdir,"%s/%s"%(bin_dir,bin_file))
-    #         with open(bin_path, "a") as out:
-    #             SeqIO.write(record, out, "fasta")
-
-        
