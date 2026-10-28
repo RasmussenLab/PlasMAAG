@@ -60,7 +60,7 @@ get_contig_names:
   threads: 1
   mem_gb: 4
 
-Strobealign_bam_default:
+Minimap2_bam_hifi:
   threads: 10
   mem_gb: 160
 
