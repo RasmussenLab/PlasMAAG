@@ -345,8 +345,9 @@ rule Minimap2_bam_hifi:
         set -euo pipefail
 
         (
-            minimap2 -t {threads} -ax map-hifi \
-                {input.contig:q} {input.reads:q} |
+        minimap2 -t {threads} -ax map-hifi \
+            --split-prefix {output.bam:q}.split \
+            {input.contig:q} {input.reads:q} |
             samstrip |
             samtools view -b -F 2308 -o {output.bam:q} -
         ) 2> {log.log:q}
