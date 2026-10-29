@@ -341,20 +341,33 @@ rule Minimap2_bam_hifi:
     conda:
         THIS_FILE_DIR / "envs/minimap2_env.yaml"
     shell:
-        """
+        r"""
         set -euo pipefail
 
         (
-        minimap2 -t {threads} -ax map-hifi \
-            --split-prefix {output.bam:q}.split \
-            {input.contig:q} {input.reads:q} |
-            samstrip |
-            samtools view -b -F 2308 -o {output.bam:q} -
+            # Allow the pipeline to fail so we can record each exit status.
+            set +e
+
+            minimap2 -t {threads} -ax map-hifi \
+                --split-prefix {output.bam:q}.split \
+                {input.contig:q} {input.reads:q} |
+                samstrip |
+                samtools view -b -F 2308 -o {output.bam:q} -
+
+            statuses=("${{PIPESTATUS[@]}}")
+            set -e
+
+            echo "Exit codes: minimap2=${{statuses[0]}} samstrip=${{statuses[1]}} samtools=${{statuses[2]}}" >&2
+
+            for status in "${{statuses[@]}}"; do
+                if (( status != 0 )); then
+                    exit "$status"
+                fi
+            done
         ) 2> {log.log:q}
 
         touch {output.finished:q}
         """
-
 # Sort the bam files and index them
 rulename="sort"
 rule sort:
