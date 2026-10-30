@@ -292,8 +292,7 @@ if __name__ == "__main__":
         "--minid",
         type=float,
         help="Min identity allowed.",
-        required=True,
-        help="Minimum percentage identity allowed.",
+        required=True
     )
 
     parser.add_argument(
