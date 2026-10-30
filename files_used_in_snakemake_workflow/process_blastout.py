@@ -29,17 +29,36 @@ def graph_from_blastout(
     if intra_sample_matches_allowed:
         print("Allowing alignments from the same samples")
 
-    def valid_alignment(c_q_len, c_s_len, q_s, q_e, s_s, s_e):
-        """
-        Check if alignment is consistent with both contigs belonging to the same original genome
-        """
+    def valid_alignment(
+        c_q_len, c_s_len, q_s, q_e, s_s, s_e, end_tolerance=0
+    ):
+        # Determine relative orientation before sorting.
+        direction = (q_e - q_s) * (s_e - s_s)
 
-        if (q_s > s_s and s_e < (c_q_len - q_s)) or (s_s > q_s and q_e < (c_s_len - s_s)):
-            return False
+        q_start, q_end = sorted((q_s, q_e))
+        s_start, s_end = sorted((s_s, s_e))
 
-        else:
-            return True
+        # Express the subject in the same orientation as the query.
+        if direction < 0:
+            s_start, s_end = (
+                c_s_len - s_end + 1,
+                c_s_len - s_start + 1,
+            )
 
+        q_left = q_start - 1
+        q_right = c_q_len - q_end
+        s_left = s_start - 1
+        s_right = c_s_len - s_end
+
+        both_extend_left = (
+            q_left > end_tolerance and s_left > end_tolerance
+        )
+        both_extend_right = (
+            q_right > end_tolerance and s_right > end_tolerance
+        )
+
+        return not (both_extend_left or both_extend_right)
+    
     def contig_len(contigname):
         """
         Extract contig length depending on contig origin (SPAdes or MEGAHIT)
@@ -53,25 +72,30 @@ def graph_from_blastout(
             return int(contigname.split("_len=")[1])
 
     def merge_ranges(ranges_list):
-        # Step 2: Merge overlapping and adjacent ranges
+        if not ranges_list:
+            return [], 0
+
+        ranges_list = sorted(ranges_list)
         merged_ranges = []
         current_start, current_end = ranges_list[0]
 
         for start, end in ranges_list[1:]:
-            if start <= current_end:  # Overlapping or adjacent ranges
+            # Merge overlapping or adjacent 1-based inclusive intervals.
+            if start <= current_end + 1:
                 current_end = max(current_end, end)
-            else:  # No overlap
+            else:
                 merged_ranges.append((current_start, current_end))
                 current_start, current_end = start, end
 
-        # Don't forget to add the last range
         merged_ranges.append((current_start, current_end))
 
-        # Step 3: Calculate the total length of the merged ranges
-        total_length = sum(end - start for start, end in merged_ranges)
+        total_length = sum(
+            end - start + 1
+            for start, end in merged_ranges
+        )
 
         return merged_ranges, total_length
-
+    
     cc_blast_g = nx.Graph()
     
     with open(blastfile,"r") as f:
@@ -93,7 +117,8 @@ def graph_from_blastout(
             # But arent they aligned all against all?
             # Pehaps skip does which are the same ?
             # assert ci != cj:
-
+            if ci == cj:
+                continue
             if (
                 (ci.split(separator)[0] == cj.split(separator)[0]) and not intra_sample_matches_allowed
             ):  ## continue if matches from the same sample
@@ -106,28 +131,54 @@ def graph_from_blastout(
                 continue
 
             if alig_len >= min_al and identity >= min_id:
-                ci_s, ci_e, cj_s, cj_e = [int(p) for p in blast_row[6:10]]
-                if ci_s > ci_e:
-                    ci_s, ci_e = ci_e, ci_s
-                if cj_s > cj_e:
-                    cj_s, cj_e = cj_e, cj_s
+                ci_s, ci_e, cj_s, cj_e = [
+                    int(p) for p in blast_row[6:10]
+                ]
 
+                # Classify this individual BLAST hit using original coordinates.
                 valid_al = valid_alignment(
-                    contig_len(ci), contig_len(cj), ci_s, ci_e, cj_s, cj_e
+                    contig_len(ci),
+                    contig_len(cj),
+                    ci_s,
+                    ci_e,
+                    cj_s,
+                    cj_e,
                 )
+
                 if not valid_al and restrictive_alignments:
                     continue
 
+                # Preserve the hit and its individual classification.
+                if not memory_efficient:
+                    direction = (ci_e - ci_s) * (cj_e - cj_s)
+
+                    alignment_block = {
+                        "q": ci,
+                        "s": cj,
+                        "qstart": ci_s,
+                        "qend": ci_e,
+                        "sstart": cj_s,
+                        "send": cj_e,
+                        "strand": "+" if direction > 0 else "-" if direction < 0 else None,
+                        "length": alig_len,
+                        "identity": identity,
+                        "restrictive": valid_al,
+                    }
+
+                # Normalize coordinates for coverage calculations.
+                ci_s, ci_e = sorted((ci_s, ci_e))
+                cj_s, cj_e = sorted((cj_s, cj_e))
+                
                 if (ci, cj) not in cc_blast_g.edges():
                     al_ranges_q = [(min(ci_s, ci_e), max(ci_s, ci_e))]
                     al_ranges_s = [(min(cj_s, cj_e), max(cj_s, cj_e))]
                     merged_ranges_q, al_len_q = (
                         al_ranges_q,
-                        al_ranges_q[0][1] - al_ranges_q[0][0],
+                        al_ranges_q[0][1] - al_ranges_q[0][0]+1,
                     )
                     merged_ranges_s, al_len_s = (
                         al_ranges_s,
-                        al_ranges_s[0][1] - al_ranges_s[0][0],
+                        al_ranges_s[0][1] - al_ranges_s[0][0]+1,
                     )
 
                     alig_len = min(al_len_q, al_len_s)
@@ -180,8 +231,8 @@ def graph_from_blastout(
                     ) / (alig_len)
                     cc_blast_g[ci][cj]["al_len"] = alig_len
 
-                    # cc_blast_g[ci][cj]["al_ranges_%s" % ci] = merged_ranges_q
-                    # cc_blast_g[ci][cj]["al_ranges_%s" % cj] = merged_ranges_s
+                    cc_blast_g[ci][cj]["al_ranges_%s" % ci] = merged_ranges_q
+                    cc_blast_g[ci][cj]["al_ranges_%s" % cj] = merged_ranges_s
 
                     weight = (
                         cc_blast_g[ci][cj]["identity"]
@@ -198,6 +249,13 @@ def graph_from_blastout(
                     cc_blast_g[ci][cj]["weight"] = weight
                     if not cc_blast_g[ci][cj]["restrictive"]:
                         cc_blast_g[ci][cj]["restrictive"] = valid_al
+
+                if not memory_efficient:
+                    # Inside the identity/length filtering block, after creating/updating the edge.
+                    cc_blast_g[ci][cj].setdefault("alignment_blocks", []).append(alignment_block)
+
+
+
 
         if memory_efficient== True:
             print("Keeping only al_len and identity as edge attributes to save memory")
@@ -234,6 +292,8 @@ if __name__ == "__main__":
         "--minid",
         type=float,
         help="Min identity allowed.",
+        required=True,
+        help="Minimum percentage identity allowed.",
     )
 
     parser.add_argument(
@@ -289,3 +349,5 @@ if __name__ == "__main__":
             ),
             pkl,
         )
+
+
