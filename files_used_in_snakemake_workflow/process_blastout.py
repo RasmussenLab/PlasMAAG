@@ -103,7 +103,7 @@ def graph_from_blastout(
                     cj_s, cj_e = cj_e, cj_s
 
                 valid_al = valid_alignment(
-                    contig_len(ci), contig_len(cj), ci_s, ci_e, cj_s, cj_e
+                    contig_len[ci], contig_len[cj], ci_s, ci_e, cj_s, cj_e
                 )
                 if not valid_al and restrictive_alignments:
                     continue
@@ -125,8 +125,8 @@ def graph_from_blastout(
                     weight = (
                         identity
                         * (
-                            min(alig_len, contig_len(ci), contig_len(cj))
-                            / min(contig_len(ci), contig_len(cj))
+                            min(alig_len, contig_len[ci], contig_len[cj])
+                            / min(contig_len[ci], contig_len[cj])
                         )
                         * (1 / 100)
                     )
@@ -178,10 +178,10 @@ def graph_from_blastout(
                         * (
                             min(
                                 cc_blast_g[ci][cj]["al_len"],
-                                contig_len(ci),
-                                contig_len(cj),
+                                contig_len[ci],
+                                contig_len[cj],
                             )
-                            / min(contig_len(ci), contig_len(cj))
+                            / min(contig_len[ci], contig_len[cj])
                         )
                         * (1 / 100)
                     )
