@@ -652,28 +652,76 @@ rule align_all_chunks:
         """
 
 # 3. Genereate nx graph from the alignment graph
+# 3. Generate nx graph from the alignment graph
 rulename = "weighted_alignment_graph"
+
 rule weighted_alignment_graph:
     input:
-        os.path.join(OUTDIR,"intermidiate_files",'blastn','blastn_all_against_all.txt'),
-        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks/blastn/align_contigs.finished')
+        blastout=os.path.join(
+            OUTDIR, "intermidiate_files", "blastn", "blastn_all_against_all.txt"
+        ),
+        finished=os.path.join(
+            OUTDIR, "intermidiate_files",
+            "rule_completed_checks/blastn/align_contigs.finished"
+        ),
+        contigs=os.path.join(
+            OUTDIR, "intermidiate_files",
+            "assembly_mapping_output", "contigs.flt.fna.gz"
+        )
     output:
-        os.path.join(OUTDIR,"intermidiate_files",'alignment_graph','alignment_graph.pkl'),
-        os.path.join(OUTDIR,"intermidiate_files",'rule_completed_checks','alignment_graph_processing','weighted_alignment_graph.finished')
+        graph=os.path.join(
+            OUTDIR, "intermidiate_files", "alignment_graph", "alignment_graph.pkl"
+        ),
+        lengths=os.path.join(
+            OUTDIR, "intermidiate_files", "alignment_graph", "contig_lengths.tsv"
+        ),
+        finished=os.path.join(
+            OUTDIR, "intermidiate_files", "rule_completed_checks",
+            "alignment_graph_processing", "weighted_alignment_graph.finished"
+        )
     params:
-        path = os.path.join(SRC_DIR, 'process_blastout.py'),
+        path=os.path.join(SRC_DIR, "process_blastout.py")
     threads: threads_fn(rulename)
-    resources: walltime = walltime_fn(rulename), mem_gb = mem_gb_fn(rulename)
-    benchmark: config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
-    log: 
+    resources:
+        walltime=walltime_fn(rulename),
+        mem_gb=mem_gb_fn(rulename)
+    benchmark:
+        config.get("benchmark", f"{str(OUTDIR)}/benchmark/") + "intermidiate_files_" + rulename
+    log:
         log=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename,
-        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_err",
-        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename+"_out"
+        e=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename + "_err",
+        o=config.get("log", f"{str(OUTDIR)}/log/") + "intermidiate_files_" + rulename + "_out"
     shell:
+        r"""
+        gzip -dc {input.contigs:q} |
+        awk 'BEGIN {{
+            OFS = "\t"
+            print "contigname", "contiglength"
+        }}
+        /^>/ {{
+            if (name != "") print name, len
+            name = substr($1, 2)
+            len = 0
+            next
+        }}
+        {{
+            gsub(/[[:space:]]/, "")
+            len += length($0)
+        }}
+        END {{
+            if (name != "") print name, len
+        }}' > {output.lengths:q}
+
+        python {params.path:q} \
+            --blastout {input.blastout:q} \
+            --contig_lengths {output.lengths:q} \
+            --out {output.graph:q} \
+            --minid 98 \
+            &> {log.log:q}
+
+        touch {output.finished:q}
         """
-        python {params.path} --blastout {input[0]} --out {output[0]} --minid 98 &> {log.log}
-        touch {output[1]}
-        """
+        
 
 ## 5. Run n2v on the per sample assembly graphs
 rulename = "n2v_assembly_alignment_graph"

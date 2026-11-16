@@ -5,6 +5,7 @@ import pickle
 import networkx as nx
 import numpy as np
 from git_commit import get_git_commit
+import csv
 
 
 def graph_from_blastout(
@@ -15,6 +16,7 @@ def graph_from_blastout(
     separator,
     intra_sample_matches_allowed,
     memory_efficient,
+    contig_len,
 ):
     """
     Given a blastfile that contains blast output between contigs,
@@ -39,18 +41,6 @@ def graph_from_blastout(
 
         else:
             return True
-
-    def contig_len(contigname):
-        """
-        Extract contig length depending on contig origin (SPAdes or MEGAHIT)
-        """
-        split_name=contigname.split("_length_")
-        if(len(split_name)==2):
-            # SPAdes
-            return int(split_name[1].split("_")[0])
-        else:
-            # MEGAHIT
-            return int(contigname.split("_len=")[1])
 
     def merge_ranges(ranges_list):
         # Step 2: Merge overlapping and adjacent ranges
@@ -265,13 +255,42 @@ if __name__ == "__main__":
         action="store_true",
         help="if set, edge attributes will be minimized to save memory, i.e. only al_len and identity will be kept",
     )
-
+    parser.add_argument(
+        "--contig_lengths",
+        required=True,
+        type=str,
+        help="TSV file with contigname and contiglength columns.",
+    )
 
 
     # Parse the arguments
     args = parser.parse_args()
     print(args)
 
+    contig_lengths = {}
+
+    with open(args.contig_lengths, newline="") as handle:
+        reader = csv.DictReader(handle, delimiter="\t")
+
+        if not {"contigname", "contiglength"}.issubset(reader.fieldnames or []):
+            raise ValueError(
+                "Contig lengths file must have tab-separated columns "
+                "'contigname' and 'contiglength'."
+            )
+
+        for row in reader:
+            name = row["contigname"]
+            length = int(row["contiglength"])
+
+            if length <= 0:
+                raise ValueError(f"Invalid length for contig {name!r}: {length}")
+
+            if name in contig_lengths:
+                raise ValueError(f"Duplicate contig name in lengths file: {name!r}")
+
+            contig_lengths[name] = length
+
+    print(f"Loaded lengths for {len(contig_lengths):,} contigs")
     ## Print git commit so we can debug
     commit_hash = get_git_commit(os.path.abspath(__file__))
     print(f"Git commit hash: {commit_hash}")
@@ -282,10 +301,11 @@ if __name__ == "__main__":
                 args.blastout,
                 min_id=args.minid,
                 min_al=args.min_al_len,
-                restrictive_alignments=True if not args.non_restrictive else False,
+                restrictive_alignments=not args.non_restrictive,
                 separator=args.separator,
-                intra_sample_matches_allowed= False if not args.intra_sample_matches_allowed else True,
-                memory_efficient= False if not args.mem_efficient else True
+                intra_sample_matches_allowed=args.intra_sample_matches_allowed,
+                memory_efficient=args.mem_efficient,
+                contig_lengths=contig_lengths,  # NEW
             ),
             pkl,
         )
