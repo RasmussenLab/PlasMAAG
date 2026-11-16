@@ -305,7 +305,7 @@ if __name__ == "__main__":
                 separator=args.separator,
                 intra_sample_matches_allowed=args.intra_sample_matches_allowed,
                 memory_efficient=args.mem_efficient,
-                contig_lengths=contig_lengths,  # NEW
+                contig_len=contig_lengths,  # NEW
             ),
             pkl,
         )
